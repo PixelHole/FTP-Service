@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using FTP_Server.Database.DataTypes;
+using FTP_Server.File_System.Access_Management;
 using Newtonsoft.Json;
 
 namespace FTP_Server.File_System
@@ -11,16 +13,17 @@ namespace FTP_Server.File_System
         
         
         [JsonConstructor]
-        public File(string name, string extension, long size, string path) : base(name, path)
+        public File(string name, string path, AccessType accessType, User authorizedUser, string extension, long size) 
+            : base(name, path, accessType, authorizedUser)
         {
             Extension = extension;
             Size = size;
         }
-        public File(string path) : base(path)
+        public File(AccessType accessType, User authUser, string path) : base(accessType, authUser, path)
         {
             GetDataFromPath(path);
         }
-        
+
         private void GetDataFromPath(string path)
         {
             FileInfo info = new FileInfo(path);

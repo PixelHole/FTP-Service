@@ -42,19 +42,26 @@
         <Reference Include="System.Xml" />
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Database\DataTypes\User.cs" />
+        <Compile Include="File System\Access Management\AccessType.cs" />
         <Compile Include="File System\File.cs" />
         <Compile Include="File System\FileManager.cs" />
         <Compile Include="File System\Folder.cs" />
         <Compile Include="File System\SystemFile.cs" />
         <Compile Include="Program.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
+        <Compile Include="Server\Client Session\Client.cs" />
+        <Compile Include="Server\Client Session\ClientCommandInterpreter.cs" />
+        <Compile Include="Server\Client Session\ClientConnection.cs" />
+        <Compile Include="Server\Client Session\ClientManager.cs" />
+        <Compile Include="Server\LocalServer.cs" />
+        <Compile Include="Server\Network\NetworkCommunication.cs" />
+        <Compile Include="Server\Network\NetworkFlags.cs" />
+        <Compile Include="Server\Network\NetworkPacket.cs" />
+        <Compile Include="Server\Network\ServerInformation.cs" />
     </ItemGroup>
     <ItemGroup>
       <None Include="packages.config" />
-    </ItemGroup>
-    <ItemGroup>
-      <Folder Include="File System\Access Management\" />
-      <Folder Include="Security\" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
