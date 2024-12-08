@@ -43,6 +43,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Database\DataTypes\User.cs" />
+        <Compile Include="Database\UserDatabase.cs" />
         <Compile Include="File System\Access Management\AccessType.cs" />
         <Compile Include="File System\File.cs" />
         <Compile Include="File System\FileManager.cs" />

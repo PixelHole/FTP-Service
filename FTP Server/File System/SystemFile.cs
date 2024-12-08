@@ -10,8 +10,9 @@ namespace FTP_Server.File_System
     {
         public string Name { get; protected set; }
         public string Path { get; protected set; }
-        public AccessType AccessType { get; private set; }
-        public User AuthorizedUser { get; private set; }
+        public AccessType AccessType { get; protected set; }
+        public User AuthorizedUser { get; protected set; }
+        public Folder Parent { get; protected set; }
 
 
         protected SystemFile(string name, string path) : this(name, path, AccessType.PublicBoth, null)
@@ -43,5 +44,7 @@ namespace FTP_Server.File_System
         public void SetAccessType(AccessType accessType) => AccessType = accessType;
         public void SetAuthorization(User user) => AuthorizedUser = user;
         public void ClearAuthorization() => SetAuthorization(null);
+
+        public void SetParent(Folder parent) => Parent = parent;
     }
 }

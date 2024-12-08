@@ -20,6 +20,7 @@ namespace FTP_Server.File_System
             {
                 foreach (var folder in folders)
                 {
+                    folder.SetParent(this);
                     Subfolders.Add(folder);
                 }
             }
@@ -27,7 +28,8 @@ namespace FTP_Server.File_System
             if (files != null)
             {
                 foreach (var file in files)
-                {
+                { 
+                    file.SetParent(this);
                     Files.Add(file);
                 }
             }
@@ -41,28 +43,42 @@ namespace FTP_Server.File_System
         {
             string path = $"{Path}\\{folderName}";
             Directory.CreateDirectory(path);
-            Subfolders.Add(new Folder(AccessType, AuthorizedUser, path, false));
+            Folder emptyFolder = new Folder(AccessType, AuthorizedUser, path, false);
+
+            AddSubfolder(emptyFolder);
         }
         
         public bool AddSubfolder(Folder folder)
         {
             if (Subfolders.Contains(folder)) return false;
+            folder.SetParent(this);
             Subfolders.Add(folder);
             return true;
         }
         public bool RemoveFolder(Folder folder)
         {
-            return Subfolders.Remove(folder);
+            if (Subfolders.Remove(folder))
+            {
+                folder.SetParent(null);
+                return true;
+            }
+            return false;
         }
         public bool AddFile(File file)
         {
             if (Files.Contains(file)) return false;
+            file.SetParent(this);
             Files.Add(file);
             return true;
         }
         public bool RemoveFile(File file)
         {
-            return Files.Remove(file);
+            if (Files.Remove(file))
+            {
+                file.SetParent(null);
+                return true;
+            }
+            return false;
         }
 
         public void IndexThisFolder()
@@ -74,14 +90,16 @@ namespace FTP_Server.File_System
 
             foreach (var filePath in files)
             {
-                Files.Add(new File(AccessType, AuthorizedUser, filePath));
+                File file = new File(AccessType, AuthorizedUser, filePath);
+                AddFile(file);
             }
 
             string[] subfolders = Directory.GetDirectories(Path);
 
             foreach (var subfolderPath in subfolders)
             {
-                Subfolders.Add(new Folder(AccessType, AuthorizedUser, subfolderPath, true));
+                Folder folder = new Folder(AccessType, AuthorizedUser, subfolderPath, true);
+                AddSubfolder(folder);
             }
         }
     }

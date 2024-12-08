@@ -9,19 +9,15 @@ namespace FTP_Server.File_System
     {
         private static string SaveFileName { get; } = "Indices.json";
         private static string RootDirectoryPath { get; } = "M:\\FTP server Root";
-        public static Folder RootDirectory { get; private set; } // = new Folder(RootDirectoryPath);
+        public static Folder RootDirectory { get; private set; }
         public static string DirectoryRootPath { get; private set; } = "";
 
 
-        
         public static void SaveToFile()
         {
             StreamWriter writer = new StreamWriter(SaveFileName);
             
-            string raw = JsonConvert.SerializeObject(RootDirectory, Formatting.Indented);
             
-            writer.Flush();
-            writer.Write(raw);
             
             writer.Dispose();
             writer.Close();
@@ -29,13 +25,13 @@ namespace FTP_Server.File_System
         public static void LoadFromFile()
         {
             StreamReader reader = new StreamReader(SaveFileName);
-
-            string raw = reader.ReadToEnd();
-
-            RootDirectory = JsonConvert.DeserializeObject<Folder>(raw);
+            
+            
             
             reader.Dispose();
             reader.Close();
         }
+
+        public static bool IsPathValid(string path) => path.StartsWith(RootDirectoryPath);
     }
 }

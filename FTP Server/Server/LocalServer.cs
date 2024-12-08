@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using FTP_Server.Server.Client_Session;
 using Message_Board.Network;
 
@@ -8,7 +9,8 @@ namespace FTP_Server.Server
 {
     public static class LocalServer
     {
-        private static Socket Handler { get; set; }
+        private static Socket ControlListener { get; set; }
+        private static Socket DataListener { get; set; }
         private static Thread ListenerThread { get; set; }
 
 
@@ -25,22 +27,27 @@ namespace FTP_Server.Server
         }
         private static void EstablishServer()
         {
-            IPEndPoint endPoint = new IPEndPoint(ServerInformation.IpAddress, ServerInformation.ConnectionPort);
+            IPEndPoint controlEndPoint = new IPEndPoint(ServerInformation.IpAddress, ServerInformation.FtpControlPort);
+            IPEndPoint dataEndPoint = new IPEndPoint(ServerInformation.IpAddress, ServerInformation.FtpDataPort);
 
-            Handler = new Socket(ServerInformation.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            ControlListener = new Socket(ServerInformation.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            DataListener = new Socket(ServerInformation.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             
-            Handler.Bind(endPoint);
+            ControlListener.Bind(controlEndPoint);
+            DataListener.Bind(dataEndPoint);
         }
 
         private static void ListenForConnections()
         {
-            Handler.Listen(10);
+            ControlListener.Listen(100);
+            DataListener.Listen(100);
 
             while (true)
             {
-                Socket clientSocket = Handler.Accept();
+                Socket controlSocket = ControlListener.Accept(),
+                    dataSocket = DataListener.Accept();
 
-                ClientManager.AddClient(clientSocket);
+                ClientManager.AddClient(controlSocket, dataSocket);
             }
         }
         

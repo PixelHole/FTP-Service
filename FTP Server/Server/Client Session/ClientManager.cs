@@ -10,15 +10,14 @@ namespace FTP_Server.Server.Client_Session
         public static List<Client> Clients { get; private set; } = new List<Client>();
 
 
-        public static void AddClient(Socket connection)
+        public static void AddClient(Socket controlSocket, Socket dataSocket)
         {
             AccessPool.WaitOne();
             
-            Clients.Add(new Client(connection));
+            Clients.Add(new Client(controlSocket, dataSocket));
 
             AccessPool.Release();
         }
-
         public static void RemoveClient(Client client)
         {
             AccessPool.WaitOne();
