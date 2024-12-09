@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Threading;
 using FTP_Server.Database;
 using FTP_Server.Database.DataTypes;
+using FTP_Server.File_System;
 using Message_Board.Network;
 
 namespace FTP_Server.Server.Client_Session
@@ -19,16 +20,17 @@ namespace FTP_Server.Server.Client_Session
         
         private string TempUsernameStorage { get; set; } = string.Empty;
         private User TempUser { get; set; } = null;
-        private string CurrentDirectory { get; set; } = string.Empty;
+
+        private Folder CurrentDirectory { get; set; } = null;
         
         private ClientConnection Connection { get; set; }
         private ClientCommandInterpreter CommandInterpreter { get; set; }
 
         
-        public Client(Socket controlSocket, Socket dataSocket)
+        
+        public Client(Socket controlSocket)
         {
             ControlSocket = controlSocket;
-            DataSocket = dataSocket;
             Connection = new ClientConnection(this);
             CommandInterpreter = new ClientCommandInterpreter(this);
 
@@ -93,6 +95,8 @@ namespace FTP_Server.Server.Client_Session
                     return NetworkFlags.InvalidLoginInfoFlag;
                 }
             }
+
+            return string.Empty;
         }
         public string Logout()
         {
@@ -105,7 +109,9 @@ namespace FTP_Server.Server.Client_Session
         }
         public string CloseControlSocket()
         {
-            throw new NotImplementedException();
+            ShutdownControlSocket();
+            Logout();
+            return NetworkFlags.ExecutionSuccessFlag;
         }
         
         //      File Manipulation
@@ -123,9 +129,9 @@ namespace FTP_Server.Server.Client_Session
         {
             throw new NotImplementedException();
         }
-        public string GetCurrentDirectory(string name, string path)
+        public string GetCurrentDirectory()
         {
-            return CurrentDirectory;
+            return FileManager.SystemToRootRelativePath(CurrentDirectory.Path);
         }
         public string ChangeDirectory(string path)
         {
@@ -139,7 +145,7 @@ namespace FTP_Server.Server.Client_Session
 
         
         // internal functions
-        public void Shutdown()
+        public void ShutdownControlSocket()
         {
             ControlSocket.Shutdown(SocketShutdown.Both);
             ControlSocket.Close();

@@ -28,7 +28,7 @@ namespace FTP_Server.Server.Client_Session
         private void ClientDisconnectHandler()
         {
             // fancy reconnect logic can be here
-            Owner.Shutdown();
+            Owner.ShutdownControlSocket();
         }
     }
 }

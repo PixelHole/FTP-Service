@@ -11,6 +11,7 @@ namespace FTP_Server.File_System
         public List<Folder> Subfolders { get; private set; } = new List<Folder>();
         public List<File> Files { get; private set; } = new List<File>();
 
+        
 
         [JsonConstructor]
         public Folder(Folder[] folders, File[] files, string name, AccessType accessType, User authUser, string path) 
@@ -20,18 +21,15 @@ namespace FTP_Server.File_System
             {
                 foreach (var folder in folders)
                 {
-                    folder.SetParent(this);
-                    Subfolders.Add(folder);
+                    AddSubfolder(folder);
                 }
             }
 
-            if (files != null)
+            if (files == null) return;
+            
+            foreach (var file in files)
             {
-                foreach (var file in files)
-                { 
-                    file.SetParent(this);
-                    Files.Add(file);
-                }
+                AddFile(file);
             }
         }
         public Folder(AccessType accessType, User authUser, string path, bool index) : base(accessType, authUser, path)
@@ -39,6 +37,7 @@ namespace FTP_Server.File_System
             if (index) IndexThisFolder();
         }
 
+        
         public void CreateEmptySubfolder(string folderName)
         {
             string path = $"{Path}\\{folderName}";
@@ -55,7 +54,7 @@ namespace FTP_Server.File_System
             Subfolders.Add(folder);
             return true;
         }
-        public bool RemoveFolder(Folder folder)
+        public bool RemoveSubfolder(Folder folder)
         {
             if (Subfolders.Remove(folder))
             {
@@ -79,6 +78,29 @@ namespace FTP_Server.File_System
                 return true;
             }
             return false;
+        }
+
+
+        public Folder FindSubfolder(Queue<string> path)
+        {
+            string target = path.Dequeue();
+            
+            if (path.Count >= 1)
+            {
+                Folder targetSub = Subfolders.Find(folder => folder.Name == target);
+
+                return targetSub?.FindSubfolder(path);
+            }
+
+            return Subfolders.Find(folder => folder.Name == target);
+        }
+        public File FindFile(Queue<string> folderPath, string fileName)
+        {
+            var parent = folderPath.Count == 0 ? this : FindSubfolder(folderPath);
+
+            if (parent == null) return null;
+
+            return parent.Files.Find(file => file.Name == fileName);
         }
 
         public void IndexThisFolder()

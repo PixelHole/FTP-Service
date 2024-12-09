@@ -44,10 +44,9 @@ namespace FTP_Server.Server
 
             while (true)
             {
-                Socket controlSocket = ControlListener.Accept(),
-                    dataSocket = DataListener.Accept();
+                Socket controlSocket = ControlListener.Accept();
 
-                ClientManager.AddClient(controlSocket, dataSocket);
+                ClientManager.AddClient(controlSocket);
             }
         }
         
