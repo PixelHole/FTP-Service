@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using FTP_Server.Database.DataTypes;
 using FTP_Server.File_System.Access_Management;
 using Newtonsoft.Json;
@@ -36,16 +37,7 @@ namespace FTP_Server.File_System
         {
             if (index) IndexThisFolder();
         }
-
         
-        public void CreateEmptySubfolder(string folderName)
-        {
-            string path = $"{Path}\\{folderName}";
-            Directory.CreateDirectory(path);
-            Folder emptyFolder = new Folder(AccessType, AuthorizedUser, path, false);
-
-            AddSubfolder(emptyFolder);
-        }
         
         public bool AddSubfolder(Folder folder)
         {
@@ -103,6 +95,34 @@ namespace FTP_Server.File_System
             return parent.Files.Find(file => file.Name == fileName);
         }
 
+        public void FlushData()
+        {
+            foreach (var subfolder in Subfolders)
+            {
+                subfolder.FlushData();
+            }
+
+            Subfolders.Clear();
+
+            foreach (var file in Files)
+            {
+                file.FlushData();
+            }
+            
+            Files.Clear();
+            
+            Parent = null;
+        }
+
+        public List<SystemFile> GetAllSubFiles(User auth = null)
+        {
+            List<SystemFile> files = Subfolders.Where(folder => folder.CanBeReadByUser(auth)).Cast<SystemFile>().ToList();
+
+            files.AddRange(Files.Where(file => file.CanBeReadByUser(auth)).Cast<SystemFile>());
+
+            return files;
+        }
+        
         public void IndexThisFolder()
         {
             Subfolders.Clear();
@@ -112,7 +132,7 @@ namespace FTP_Server.File_System
 
             foreach (var filePath in files)
             {
-                File file = new File(AccessType, AuthorizedUser, filePath);
+                File file = new File(filePath, AccessType, AuthorizedUser);
                 AddFile(file);
             }
 

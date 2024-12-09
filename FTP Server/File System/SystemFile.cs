@@ -10,8 +10,8 @@ namespace FTP_Server.File_System
     {
         public string Name { get; protected set; }
         public string Path { get; protected set; }
-        public AccessType AccessType { get; protected set; }
-        public User AuthorizedUser { get; protected set; }
+        public AccessType AccessType { get; private set; }
+        public User AuthorizedUser { get; private set; }
         public Folder Parent { get; protected set; }
 
 
@@ -44,6 +44,24 @@ namespace FTP_Server.File_System
         public void SetAccessType(AccessType accessType) => AccessType = accessType;
         public void SetAuthorization(User user) => AuthorizedUser = user;
         public void ClearAuthorization() => SetAuthorization(null);
+
+        public bool CanBeModifiedByUser(User user)
+        {
+            if (AccessType == AccessType.PublicBoth) return true;
+
+            if (AccessType == AccessType.PrivateBoth && AuthorizedUser.Equals(user)) return true;
+
+            return false;
+        }
+
+        public bool CanBeReadByUser(User user)
+        {
+            if (AccessType == AccessType.PrivateBoth || AccessType == AccessType.PublicReadOnly) return true;
+
+            if (AuthorizedUser.Equals(user)) return true;
+
+            return false;
+        }
 
         public void SetParent(Folder parent) => Parent = parent;
     }

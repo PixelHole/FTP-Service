@@ -5,7 +5,11 @@ namespace FTP_Server.Database
 {
     public static class UserDatabase
     {
-        public static List<User> Users { get; private set; } = new List<User>();
+        public static List<User> Users { get; private set; } = new List<User>(new []
+        {
+            new User("nima", "nima"),
+            new User("arya", "arya")
+        });
 
 
         public static bool AddUser(User user)

@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using FTP_Server.Database;
 using FTP_Server.Database.DataTypes;
 using FTP_Server.File_System;
+using FTP_Server.File_System.Access_Management;
 using Message_Board.Network;
 
 namespace FTP_Server.Server.Client_Session
@@ -21,7 +24,7 @@ namespace FTP_Server.Server.Client_Session
         private string TempUsernameStorage { get; set; } = string.Empty;
         private User TempUser { get; set; } = null;
 
-        private Folder CurrentDirectory { get; set; } = null;
+        private Folder CurrentDirectory { get; set; } = FileManager.RootDirectory;
         
         private ClientConnection Connection { get; set; }
         private ClientCommandInterpreter CommandInterpreter { get; set; }
@@ -115,19 +118,24 @@ namespace FTP_Server.Server.Client_Session
         }
         
         //      File Manipulation
-        public string DeleteFileOrDirectory(string path)
+        public string DeleteDirectory(string path)
         {
-            throw new NotImplementedException();
+            return !FileManager.DeleteFolder(path,
+                UserInfo)
+                ? NetworkFlags.FileOperationFailureFlag
+                : NetworkFlags.FileOperationSuccessFlag;
         }
-        public string CreateDirectory(string name, string path) 
+        public string CreateDirectory(string path)
         {
-            throw new NotImplementedException();
+            return FileManager.CreateFolder(path, UserInfo, AccessType.PrivateBoth) == null
+                ? NetworkFlags.FileOperationFailureFlag
+                : NetworkFlags.FileOperationSuccessFlag;
         }
         
         //      Directory Manipulation
-        public string ListCurrentDirectory()
+        public string ListDirectory(string path)
         {
-            throw new NotImplementedException();
+            return FileManager.GetListOfFolder(path, UserInfo);
         }
         public string GetCurrentDirectory()
         {
@@ -135,14 +143,23 @@ namespace FTP_Server.Server.Client_Session
         }
         public string ChangeDirectory(string path)
         {
-            throw new NotImplementedException();
+            Folder newDir = FileManager.GetFolderByPath(path);
+
+            if (newDir == null) return NetworkFlags.FileOperationFailureFlag;
+
+            CurrentDirectory = newDir;
+
+            return NetworkFlags.FileOperationSuccessFlag;
         }
         public string GoToParentDirectory()
         {
-            throw new NotImplementedException();
+            var parent = CurrentDirectory.Parent;
+
+            if (parent != null) CurrentDirectory = parent;;
+
+            return NetworkFlags.FileOperationSuccessFlag;
         }
-
-
+        
         
         // internal functions
         public void ShutdownControlSocket()

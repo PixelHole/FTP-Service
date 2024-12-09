@@ -19,7 +19,7 @@ namespace FTP_Server.File_System
             Extension = extension;
             Size = size;
         }
-        public File(AccessType accessType, User authUser, string path) : base(accessType, authUser, path)
+        public File(string path, AccessType accessType, User authUser) : base(accessType, authUser, path)
         {
             GetDataFromPath(path);
         }
@@ -40,6 +40,11 @@ namespace FTP_Server.File_System
             {
                 Extension = "No Extension";
             }
+        }
+
+        public void FlushData()
+        {
+            Parent = null;
         }
     }
 }

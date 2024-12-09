@@ -15,5 +15,12 @@
         public bool CheckInfo(string username, string password) => CheckUsername(username) && CheckPassword(password);
         public bool CheckUsername(string username) => string.Equals(username, Username);
         private bool CheckPassword(string password) => string.Equals(password, Password);
+
+
+        public override bool Equals(object obj)
+        {
+            if (obj is User other) return CheckUsername(other.Username);
+            return base.Equals(obj);
+        }
     }
 }
