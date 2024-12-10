@@ -38,10 +38,15 @@ namespace FTP_Server.Server.Client_Session
             CommandInterpreter = new ClientCommandInterpreter(this);
 
             ClientThread = new Thread(ServiceLoop) {Name = "Client Thread"};
+            ClientThread.Start();
+
+            Print("client service started");
         }
 
         private void ServiceLoop()
         {
+            NetworkCommunication.SendOverNetwork(ControlSocket, NetworkFlags.ReadyFlag);
+            
             while (IsRunning)
             {
                 string cmd = Connection.GetCommandFromClient();
@@ -62,6 +67,14 @@ namespace FTP_Server.Server.Client_Session
         {
             Thread sendThread = new Thread(() =>
             {
+                DataSocket = Connection.EstablishDataConnection();
+
+                if (DataSocket == null)
+                {
+                    NetworkCommunication.SendOverNetwork(ControlSocket, NetworkFlags.ConnectionFailed);
+                    return;
+                }
+                
                 File file = FileManager.GetFileByPath(filePath);
 
                 if (file == null)
@@ -70,8 +83,15 @@ namespace FTP_Server.Server.Client_Session
                     return;
                 }
                 
-                string result = NetworkCommunication.SendFileOverNetwork(DataSocket, filePath);
+                Print("Sending file to client...");
+                
+                string result = NetworkCommunication.SendFileOverNetwork(DataSocket, file.Path);
                 NetworkCommunication.SendOverNetwork(ControlSocket, result);
+                
+                DataSocket.Shutdown(SocketShutdown.Both);
+                DataSocket.Close();
+
+                DataSocket = null;
             });
             sendThread.Start();
             return NetworkFlags.FileTransferFlag;
@@ -80,6 +100,14 @@ namespace FTP_Server.Server.Client_Session
         {
             Thread receiveThread = new Thread(() =>
             {
+                DataSocket = Connection.EstablishDataConnection();
+
+                if (DataSocket == null)
+                {
+                    NetworkCommunication.SendOverNetwork(ControlSocket, NetworkFlags.ConnectionFailed);
+                    return;
+                }
+                
                 File file = FileManager.CreateFile(filePath, false, UserInfo, AccessType.PrivateBoth);
 
                 if (file == null)
@@ -89,13 +117,24 @@ namespace FTP_Server.Server.Client_Session
                 }
                 
                 string result = NetworkCommunication.ReceiveFileFromNetwork(DataSocket, filePath);
+
+                if (result != NetworkFlags.TransferSuccessFlag)
+                {
+                    FileManager.DeleteFile(filePath, UserInfo);
+                }
+
                 NetworkCommunication.SendOverNetwork(ControlSocket, result);
+                
+                DataSocket.Shutdown(SocketShutdown.Both);
+                DataSocket.Close();
+
+                DataSocket = null;
             });
             receiveThread.Start();
             return NetworkFlags.FileTransferFlag;
         }
-        
-        
+
+
         //      Authorization
         public string Login(string data, bool mode)
         {
@@ -140,7 +179,7 @@ namespace FTP_Server.Server.Client_Session
         }
         public string CloseControlSocket()
         {
-            ShutdownControlSocket();
+            EndService();
             Logout();
             return NetworkFlags.ExecutionSuccessFlag;
         }
@@ -189,8 +228,9 @@ namespace FTP_Server.Server.Client_Session
         
         
         // internal functions
-        public void ShutdownControlSocket()
+        public void EndService()
         {
+            Print("client service ended");
             ControlSocket.Shutdown(SocketShutdown.Both);
             ControlSocket.Close();
             
@@ -203,6 +243,12 @@ namespace FTP_Server.Server.Client_Session
         {
             if (obj is Client client) return Id.Equals(client.Id);
             return base.Equals(obj);
+        }
+
+
+        private void Print(string msg)
+        {
+            Console.WriteLine($"[{Id.ToString()}] : {msg}");
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using Message_Board.Network;
+﻿using System;
+using System.Net.Sockets;
+using Message_Board.Network;
 
 namespace FTP_Server.Server.Client_Session
 {
@@ -25,10 +27,26 @@ namespace FTP_Server.Server.Client_Session
             return cmd;
         }
 
+        public Socket EstablishDataConnection()
+        {
+            Socket dataSocket;
+
+            try
+            {
+                dataSocket = LocalServer.DataListener.Accept();
+            }
+            catch (Exception e)
+            {
+                dataSocket = null;
+            }
+
+            return dataSocket;
+        }
+        
         private void ClientDisconnectHandler()
         {
             // fancy reconnect logic can be here
-            Owner.ShutdownControlSocket();
+            Owner.EndService();
         }
     }
 }

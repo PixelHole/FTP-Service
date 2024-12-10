@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 
@@ -25,6 +26,13 @@ namespace FTP_Server.Server.Client_Session
             Clients.Remove(client);
 
             AccessPool.Release();
+            
+            Print("client disconnected");
+        }
+
+        private static void Print(string msg)
+        {
+            Console.WriteLine($"[Client Manager] : {msg}");
         }
     }
 }

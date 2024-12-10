@@ -11,6 +11,7 @@ namespace Message_Board.Network
     public static class NetworkCommunication
     {
         public static int PacketLength { get; private set; } = 1024;
+        public static int ActualPacketLength { get; private set; } = 1024;
         public static int PacketErrorTolerance { get; private set; } = 100;
         public static int PacketErrorTimeout { get; private set; } = 500; // milliseconds 
 
@@ -27,7 +28,24 @@ namespace Message_Board.Network
             txt += NetworkFlags.EndOfFileFlag;
             byte[] decoded = Encoding.ASCII.GetBytes(txt);
 
-            return SendBytesOverNetwork(handler, decoded);
+            for (int i = 0; i <= decoded.Length / PacketLength; i++)
+            {
+                byte[] trimmed = new byte[PacketLength];
+
+                if (decoded.Length > PacketLength)
+                {
+                    Array.Copy(decoded, i * PacketLength, trimmed, 0, Math.Min(PacketLength, decoded.Length - i * PacketLength));
+                }
+                else
+                {
+                    trimmed = decoded;
+                }
+
+                if (SendBytesOverNetwork(handler, trimmed) != NetworkFlags.ConnectionSuccess)
+                    return NetworkFlags.ConnectionFailed;
+            }
+
+            return NetworkFlags.ConnectionSuccess;
         }
 
         /// <summary>
@@ -45,11 +63,13 @@ namespace Message_Board.Network
                 var buffer = new byte[PacketLength];
                 int count = ReceiveBytesFromNetwork(handler, out buffer);
 
+                if (count == -1) return NetworkFlags.ClientDisconnectedFlag;
+                
                 msg += Encoding.ASCII.GetString(buffer, 0, count);
 
                 if (msg.Contains(NetworkFlags.EndOfFileFlag))
                 {
-                    msg = msg.Substring(0, msg.Length - 5);
+                    msg = msg.Substring(0, msg.IndexOf(NetworkFlags.EndOfFileFlag, StringComparison.Ordinal));
                     break;
                 }
             }
@@ -69,7 +89,7 @@ namespace Message_Board.Network
 
             DeserializePacketsIntoFile(packets, path);
 
-            return NetworkFlags.ConnectionSuccess;
+            return result;
         }
         
         private static NetworkPacket[] SerializeFileIntoPackets(string path)
@@ -83,16 +103,15 @@ namespace Message_Board.Network
             {
                 byte[] content = new byte[PacketLength];
 
-                int count = fileStream.Length - fileStream.Position > PacketLength
-                    ? PacketLength
-                    : (int)(fileStream.Length - fileStream.Position);
-
-                fileStream.Read(content, i * PacketLength, count);
+                fileStream.Read(content,0 , PacketLength);
 
                 NetworkPacket packet = new NetworkPacket(i + 1, PacketCount, content);
 
                 packets[i] = packet;
             }
+
+            fileStream.Dispose();
+            fileStream.Close();
 
             return packets;
         }
@@ -104,8 +123,32 @@ namespace Message_Board.Network
             
             for (int i = 0; i < packets.Length; i++)
             {
-                string content = Encoding.ASCII.GetString(packets[i].Content);
+                Byte[] data;
+                
+                if (i == packets.Length - 1)
+                {
+                    int firstZero = packets[i].Content.Length;
+                    
+                    for (int j = 0; j < packets[i].Content.Length; j++)
+                    {
+                        if (packets[i].Content[j] == 0)
+                        {
+                            firstZero = j;
+                            break;
+                        }
+                    }
 
+                    data = new byte[firstZero];
+                    
+                    Array.Copy(packets[i].Content, 0, data, 0, firstZero);
+                }
+                else
+                {
+                    data = packets[i].Content;
+                }
+                
+                string content = Encoding.ASCII.GetString(data);
+                
                 writer.Write(content);
             }
             
@@ -173,6 +216,8 @@ namespace Message_Board.Network
             errorCount = 0;
             packets = new NetworkPacket[initial.Max];
 
+            packets[0] = initial;
+            
             for (int i = 1; i < packets.Length; i++)
             {
                 NetworkPacket packet = ReceivePacketFromNetwork(handler);
@@ -197,25 +242,18 @@ namespace Message_Board.Network
                 packets[i] = packet;
             }
 
-            return NetworkFlags.ConnectionSuccess;
+            return NetworkFlags.TransferSuccessFlag;
         }
         
         private static string SendPacketOverNetwork(Socket handler, NetworkPacket packet)
         {
             string json = JsonConvert.SerializeObject(packet, Formatting.None);
 
-            byte[] data = Encoding.ASCII.GetBytes(json);
-
-            return SendBytesOverNetwork(handler, data);
+            return SendOverNetwork(handler, json);
         }
         private static NetworkPacket ReceivePacketFromNetwork(Socket handler)
         {
-            byte[] buffer = new byte[PacketLength];
-            int count = ReceiveBytesFromNetwork(handler, out buffer);
-
-            if (count == -1) return new NetworkPacket(-1, -1, Array.Empty<byte>());
-
-            string raw = Encoding.ASCII.GetString(buffer);
+            string raw = ReceiveFromSocket(handler);
 
             NetworkPacket packet = JsonConvert.DeserializeObject<NetworkPacket>(raw);
 
@@ -232,7 +270,7 @@ namespace Message_Board.Network
             {
                 return NetworkFlags.ClientDisconnectedFlag;
             }
-
+            
             return NetworkFlags.ConnectionSuccess;
         }
         private static int ReceiveBytesFromNetwork(Socket handler, out byte[] data)
@@ -253,6 +291,12 @@ namespace Message_Board.Network
             data = buffer;
 
             return count;
+        }
+
+
+        private static void Print(string msg)
+        {
+            Console.WriteLine($"[Network] : {msg}");
         }
     }
 }

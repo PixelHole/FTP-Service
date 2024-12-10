@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <RootNamespace>FTP_Client</RootNamespace>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <PackageReference Include="Terminal.Gui" Version="2.0.0-v2-develop.2329" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="..\FTP Server\Server\Network\NetworkCommunication.cs">
+        <Link>Network\NetworkCommunication.cs</Link>
+      </Compile>
+      <Compile Include="..\FTP Server\Server\Network\NetworkFlags.cs">
+        <Link>Network\NetworkFlags.cs</Link>
+      </Compile>
+      <Compile Include="..\FTP Server\Server\Network\NetworkPacket.cs">
+        <Link>Network\NetworkPacket.cs</Link>
+      </Compile>
+      <Compile Include="..\FTP Server\Server\Network\ServerInformation.cs">
+        <Link>Network\ServerInformation.cs</Link>
+      </Compile>
+    </ItemGroup>
+
+</Project>

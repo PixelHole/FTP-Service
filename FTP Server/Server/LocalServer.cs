@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ namespace FTP_Server.Server
     public static class LocalServer
     {
         private static Socket ControlListener { get; set; }
-        private static Socket DataListener { get; set; }
+        public static Socket DataListener { get; set; }
         private static Thread ListenerThread { get; set; }
 
 
@@ -22,7 +23,9 @@ namespace FTP_Server.Server
 
         private static void ServiceLoop()
         {
+            Print("Starting service");
             EstablishServer();
+            Print("server established, listening for connections");
             ListenForConnections();
         }
         private static void EstablishServer()
@@ -47,8 +50,14 @@ namespace FTP_Server.Server
                 Socket controlSocket = ControlListener.Accept();
 
                 ClientManager.AddClient(controlSocket);
+                Print($"Client connected : {controlSocket.RemoteEndPoint}");
             }
         }
-        
+
+
+        private static void Print(string msg)
+        {
+            Console.WriteLine($"[Listener Server] : {msg}");
+        }
     }
 }

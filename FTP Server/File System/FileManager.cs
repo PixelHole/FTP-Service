@@ -186,7 +186,7 @@ namespace FTP_Server.File_System
             
             if (splitPath.Length < 2) return null;
             
-            for (int i = 2; i < splitPath.Length - 1; i++)
+            for (int i = 1; i < splitPath.Length - 1; i++)
             {
                 queuePath.Enqueue(splitPath[i]);
             }

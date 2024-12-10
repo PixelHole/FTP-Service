@@ -21,7 +21,7 @@ namespace FTP_Server.Server.Client_Session
 
             string header = split[0].ToLower();
             
-            switch (split[0])
+            switch (header)
             {
                 case "user" :
                     return UsernameCommand(split);
