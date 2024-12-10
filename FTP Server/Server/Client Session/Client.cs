@@ -57,16 +57,44 @@ namespace FTP_Server.Server.Client_Session
         
         // Client Commands
         
-        public string SendFileToClient(string filePath)
+        //      Sending and receiving files
+        public string SendFileToClientAsync(string filePath)
         {
-            // use separate thread
-            return NetworkCommunication.SendFileOverNetwork(DataSocket, filePath);
+            Thread sendThread = new Thread(() =>
+            {
+                File file = FileManager.GetFileByPath(filePath);
+
+                if (file == null)
+                {
+                    NetworkCommunication.SendOverNetwork(ControlSocket, NetworkFlags.FileOperationFailureFlag);
+                    return;
+                }
+                
+                string result = NetworkCommunication.SendFileOverNetwork(DataSocket, filePath);
+                NetworkCommunication.SendOverNetwork(ControlSocket, result);
+            });
+            sendThread.Start();
+            return NetworkFlags.FileTransferFlag;
         }
-        public string ReceiveFileFromClient(string filePath)
+        public string ReceiveFileFromClientAsync(string filePath)
         {
-            // use separate thread
-            return NetworkCommunication.ReceiveFileFromNetwork(DataSocket, filePath);
+            Thread receiveThread = new Thread(() =>
+            {
+                File file = FileManager.CreateFile(filePath, false, UserInfo, AccessType.PrivateBoth);
+
+                if (file == null)
+                {
+                    NetworkCommunication.SendOverNetwork(ControlSocket, NetworkFlags.FileOperationFailureFlag);
+                    return;
+                }
+                
+                string result = NetworkCommunication.ReceiveFileFromNetwork(DataSocket, filePath);
+                NetworkCommunication.SendOverNetwork(ControlSocket, result);
+            });
+            receiveThread.Start();
+            return NetworkFlags.FileTransferFlag;
         }
+        
         
         //      Authorization
         public string Login(string data, bool mode)
@@ -116,12 +144,11 @@ namespace FTP_Server.Server.Client_Session
             Logout();
             return NetworkFlags.ExecutionSuccessFlag;
         }
-        
+
         //      File Manipulation
         public string DeleteDirectory(string path)
         {
-            return !FileManager.DeleteFolder(path,
-                UserInfo)
+            return !FileManager.DeleteFolder(path, UserInfo)
                 ? NetworkFlags.FileOperationFailureFlag
                 : NetworkFlags.FileOperationSuccessFlag;
         }
@@ -137,7 +164,7 @@ namespace FTP_Server.Server.Client_Session
         {
             return FileManager.GetListOfFolder(path, UserInfo);
         }
-        public string GetCurrentDirectory()
+        public string GetCurrentDirectoryPath()
         {
             return FileManager.SystemToRootRelativePath(CurrentDirectory.Path);
         }

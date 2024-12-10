@@ -142,7 +142,7 @@ namespace Message_Board.Network
                 }
             }
 
-            return NetworkFlags.ConnectionSuccess;
+            return NetworkFlags.TransferSuccessFlag;
         }
         private static string ReceivePacketsFromNetwork(Socket handler, out NetworkPacket[] packets)
         {

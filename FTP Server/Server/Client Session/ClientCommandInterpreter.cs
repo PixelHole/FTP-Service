@@ -29,11 +29,31 @@ namespace FTP_Server.Server.Client_Session
                     return PasswordCommand(split);
                 case "list" :
                     return ListCommand(split);
-                    
+                case "retr" :
+                    return RetrieveFileCommand(split);
+                case "stor" :
+                    return StoreFileCommand(split);
+                case "dele" :
+                    return DeleteFileCommand(split);
+                case "mkd" :
+                    return MakeDirectoryCommand(split);
+                case "rmd" :
+                    return RemoveDirectoryCommand(split);
+                case "pwd" :
+                    return CurrentDirectoryPathCommand(split);
+                case "cwd" :
+                    return ChangeDirectoryCommand(split);
+                case "cdup" :
+                    return GoToParentDirectoryCommand(split);
+                case "quit" :
+                    return QuitCommand(split);
+
+
                 default:
                     return NetworkFlags.InvalidCommandFlag;
             }
         }
+        
 
         private string UsernameCommand(string[] cmd)
         {
@@ -47,15 +67,19 @@ namespace FTP_Server.Server.Client_Session
         {
             return !CheckArgumentCount(cmd, 2) ? NetworkFlags.InvalidCommandFlag : Client.ListDirectory(cmd[1]);
         }
-        private string RetrieveFileCommand()
+        private string RetrieveFileCommand(string[] cmd)
         {
-            throw new NotImplementedException();
+            return !CheckArgumentCount(cmd, 2) ? NetworkFlags.InvalidCommandFlag : Client.SendFileToClientAsync(cmd[1]);
         }
-        private string StoreFileCommand()
+        private string StoreFileCommand(string[] cmd)
         {
-            throw new NotImplementedException();
+            return !CheckArgumentCount(cmd, 2) ? NetworkFlags.InvalidCommandFlag : Client.ReceiveFileFromClientAsync(cmd[1]);
         }
-        private string DeleteDirectoryCommand(string[] cmd)
+        private string DeleteFileCommand(string[] cmd)
+        {
+            return !CheckArgumentCount(cmd, 2) ? NetworkFlags.InvalidCommandFlag : Client.DeleteDirectory(cmd[1]);
+        }
+        private string RemoveDirectoryCommand(string[] cmd)
         {
             return !CheckArgumentCount(cmd, 2) ? NetworkFlags.InvalidCommandFlag : Client.DeleteDirectory(cmd[1]);
         }
@@ -63,9 +87,21 @@ namespace FTP_Server.Server.Client_Session
         {
             return !CheckArgumentCount(cmd, 2) ? NetworkFlags.InvalidCommandFlag : Client.CreateDirectory(cmd[1]);
         }
-        private string DeleteFile(string[] cmd)
+        private string CurrentDirectoryPathCommand(string[] cmd)
         {
-            throw new NotImplementedException();
+            return !CheckArgumentCount(cmd, 1) ? NetworkFlags.InvalidCommandFlag : Client.GetCurrentDirectoryPath();
+        }
+        private string ChangeDirectoryCommand(string[] cmd)
+        {
+            return !CheckArgumentCount(cmd, 2) ? NetworkFlags.InvalidCommandFlag : Client.ChangeDirectory(cmd[1]);
+        }
+        private string GoToParentDirectoryCommand(string[] cmd)
+        {
+            return !CheckArgumentCount(cmd, 1) ? NetworkFlags.InvalidCommandFlag : Client.GoToParentDirectory();
+        }
+        private string QuitCommand(string[] cmd)
+        {
+            return !CheckArgumentCount(cmd, 1) ? NetworkFlags.InvalidCommandFlag : Client.CloseControlSocket();
         }
 
         private bool CheckArgumentCount(string[] cmd, int count) => cmd.Length == count;
