@@ -209,6 +209,8 @@ namespace FTP_Server.Server.Client_Session
         }
         public string ChangeDirectory(string path)
         {
+            if (!FileManager.IsPathRootRelative(path)) return NetworkFlags.FileOperationFailureFlag;
+            
             Folder newDir = FileManager.GetFolderByPath(path);
 
             if (newDir == null) return NetworkFlags.FileOperationFailureFlag;

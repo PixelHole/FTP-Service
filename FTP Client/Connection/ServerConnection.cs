@@ -7,13 +7,13 @@ namespace FTP_Client.Connection;
 public class ServerConnection
 {
     public delegate void ControlConnectedToServerAction();
-    public static event ControlConnectedToServerAction OnControlConnected;
+    public static event ControlConnectedToServerAction? OnControlConnected;
 
     public delegate void ControlDisconnectedFromServerAction();
-    public static event ControlDisconnectedFromServerAction OnControlDisconnected;
+    public static event ControlDisconnectedFromServerAction? OnControlDisconnected;
     
     public delegate void DataConnectedToServerAction();
-    public static event DataConnectedToServerAction OnDataConnected;
+    public static event DataConnectedToServerAction? OnDataConnected;
 
     public delegate void DataDisconnectedFromServerAction();
     public static event DataDisconnectedFromServerAction OnDataDisconnected;
@@ -81,7 +81,7 @@ public class ServerConnection
     }
     private static void ConnectToControlServer()
     {
-        if (!ConnectSocketToEndPoint(ControlSocket, ControlEndPoint));
+        if (!ConnectSocketToEndPoint(ControlSocket, ControlEndPoint)) return;
         string ready = NetworkCommunication.ReceiveFromSocket(ControlSocket);
         if (ready == NetworkFlags.ReadyFlag) OnControlConnected();
     }

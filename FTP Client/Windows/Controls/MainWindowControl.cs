@@ -1,5 +1,6 @@
 ﻿using FileInformation;
 using FTP_Client.Connection;
+using FTP_Client.LocalRepository;
 using Message_Board.Network;
 using Newtonsoft.Json;
 using Terminal.Gui;
@@ -11,54 +12,63 @@ public class MainWindowControl
     private MainWindow View { get; set; }
     
     public string CurrentDirectoryPath { get; private set; }
-    public ListOfFiles CurrentDirectoryContent { get; private set; }
+    public FileItem[] CurrentDirectoryContent { get; private set; }
     
     
     public MainWindowControl(MainWindow view)
     {
         View = view;
 
-        Thread setupThread = new Thread(() =>
-        {
-            ConnectEvents();
-            ConnectToControlServer();
-            GetCurrentDirectory();
-            GetCurrentDirectoryContentAndUpdate();
-        });
+        Thread setupThread = new Thread(ApplicationSetup);
         setupThread.Start();
     }
-
-    private void Test()
+    private void ApplicationSetup()
     {
-        string ready = ServerConnection.ReceiveFromServer();
-        
-        if (ready != NetworkFlags.ReadyFlag) return;
-        
-        // string filePath = "..\\public files\\some text file.txt";
-        string filePath = "..\\img-300687.jpg";
-        string cmd = $"RETR{NetworkFlags.SeparatorFlag}{filePath}";
-
-        ServerConnection.SendToServer(cmd);
-
-        string result = ServerConnection.ReceiveFromServer();
-        
-        if (result != NetworkFlags.FileTransferFlag) return;
-
-        // ServerConnection.ReceiveFileFromServer("M:\\FTP Client repo\\tst.txt");
-        ServerConnection.ReceiveFileFromServer("M:\\FTP Client repo\\img.jpeg");
+        ConnectEvents();
+        ConnectToControlServer();
+        GetCurrentDirectory();
+        GetCurrentDirectoryContentAndUpdate();
+        LocalRepositoryManager.IndexLocalRepo();
+        UpdateLocalFilesList();
     }
     
     
     // Commands
+    
+    //      File selection Interpreter 
+    public void OnServerFileSelected(int row)
+    {
+        if (row == 0)
+        {
+            GoToParentDirectory();
+            return;
+        }
+        row--;
+
+        FileItem fileItem = CurrentDirectoryContent[row];
+
+        if (fileItem.IsFolder)
+        {
+            ChangeDirectory(fileItem.Path);
+            return;
+        }
+        
+        // receive file from server
+    }
+    
+    //      Directory related
+
     public void GetListOfCurrentDirectory()
     {
-        string cmd = $"LIST{NetworkFlags.SeparatorFlag}{CurrentDirectoryPath}";
+        string cmd = GenerateCommand("List", CurrentDirectoryPath);
 
         string json = SendCommandToServerAndGetResult(cmd);
 
         var filesList = JsonConvert.DeserializeObject<FileItem[]>(json);
 
-        CurrentDirectoryContent = new ListOfFiles(filesList);
+        if (filesList == null) return;
+        
+        CurrentDirectoryContent = filesList;
     }
     public void GetCurrentDirectory()
     {
@@ -68,11 +78,28 @@ public class MainWindowControl
 
         CurrentDirectoryPath = newDirectory;
     }
+    public void GoToParentDirectory()
+    {
+        string cmd = "CDUP";
+
+        SendCommandToServerAndGetResult(cmd);
+        
+        OnServerDirectoryChange();
+    }
+    public void ChangeDirectory(string path)
+    {
+        string cmd = GenerateCommand("CWD", path);
+
+        string result = SendCommandToServerAndGetResult(cmd);
+        
+        if (result == NetworkFlags.FileOperationSuccessFlag) OnServerDirectoryChange();
+    }
     public void GetCurrentDirectoryContentAndUpdate()
     {
         GetListOfCurrentDirectory();
         UpdateServerFilesList();
     }
+    
     private string SendCommandToServerAndGetResult(string cmd)
     {
         ServerConnection.SendToServer(cmd);
@@ -87,6 +114,18 @@ public class MainWindowControl
         ServerConnection.OnControlConnected += OnControlConnected;
         ServerConnection.OnControlDisconnected += OnControlDisconnected;
     }
+    private List<string[]> listOfFilesToStringList(FileItem[] files)
+    {
+        List<string[]> content = new List<string[]>();
+
+        foreach (var file in files)
+        {
+            content.Add(new []{file.Name, file.Extension, file.Path});
+        }
+
+        return content;
+    }
+    private string GenerateCommand(string header, string body) => $"{header}{NetworkFlags.SeparatorFlag}{body}";
     
     
     // Internal
@@ -94,9 +133,15 @@ public class MainWindowControl
     {
         ServerConnection.InitiateConnection();
     }
+    private void OnServerDirectoryChange()
+    {
+        GetCurrentDirectory();
+        GetCurrentDirectoryContentAndUpdate();
+    }
 
 
     // View control
+    
     //      Connection Status Label
     private void OnControlConnected()
     {
@@ -110,13 +155,15 @@ public class MainWindowControl
     //      Update Server files list
     private void UpdateServerFilesList()
     {
-        List<string[]> content = new List<string[]>();
-
-        foreach (var file in CurrentDirectoryContent.FilesList)
-        {
-            content.Add(new []{file.Name, file.Extension, file.ServerPath});
-        }
+        var content = listOfFilesToStringList(CurrentDirectoryContent);
         
         View.SetServerFilesListContent(content);
+    }
+    //      Update local files list
+    private void UpdateLocalFilesList()
+    {
+        var content = listOfFilesToStringList(LocalRepositoryManager.LocalFiles.ToArray());
+        
+        View.SetLocalFilesListContent(content);
     }
 }

@@ -7,7 +7,7 @@ namespace FTP_Client.Windows;
 
 public class MainWindow : Window
 {
-    private MainWindowControl Control;
+    private MainWindowControl Control { get; set; }
     
     private Label AccountStatus { get; set; }
     private Label ConnectionStatus { get; set; }
@@ -17,6 +17,7 @@ public class MainWindow : Window
     public MainWindow()
     {
         SetupElements();
+        ConnectEvents();
         
         Control = new MainWindowControl(this);
     }
@@ -70,6 +71,7 @@ public class MainWindow : Window
             Height = Dim.Percent(80),
             Title = "Server Files",
             BorderStyle = LineStyle.Rounded,
+            CellActivationKey = KeyCode.Enter,
             Style = new TableStyle()
             {
                 ShowHorizontalBottomline = true
@@ -84,6 +86,7 @@ public class MainWindow : Window
             Height = Dim.Height(ServerFilesList),
             Title = "Local Files",
             BorderStyle = LineStyle.Rounded,
+            CellActivationKey = KeyCode.Enter,
             Style = new TableStyle()
             {
                 ShowHorizontalBottomline = true
@@ -92,7 +95,12 @@ public class MainWindow : Window
 
         Add(menu, ConnectionStatus, separator, AccountStatus, ServerFilesList, LocalFilesList);
     }
+    private void ConnectEvents()
+    {
+        ServerFilesList.CellActivated += CellActionHandler;
+    }
     
+
 
     // UI updates
     
@@ -104,6 +112,8 @@ public class MainWindow : Window
         serverDt.Columns.Add("Extension");
         serverDt.Columns.Add("Path");
 
+        serverDt.Rows.Add("...", "", "");
+        
         foreach (var row in content)
         {
             serverDt.Rows.Add(row[0], row[1], row[2]);
@@ -118,6 +128,8 @@ public class MainWindow : Window
         localDt.Columns.Add("Extension");
         localDt.Columns.Add("Path");
 
+        localDt.Rows.Add("...", "", "");
+        
         foreach (var row in content)
         {
             localDt.Rows.Add(row[0], row[1], row[2]);
@@ -140,6 +152,17 @@ public class MainWindow : Window
     
 
     // input response
+    private void CellActionHandler(object? sender, CellActivatedEventArgs e)
+    {
+        Control.OnServerFileSelected(e.Row);
+    }
+    
+    
+    private void ChangeDirectory()
+    {
+        
+    }
+    
     private void LoginHandler()
     {
         
@@ -148,6 +171,7 @@ public class MainWindow : Window
     {
         
     }
+    
     private void ReconnectHandler()
     {
         
@@ -160,6 +184,7 @@ public class MainWindow : Window
     {
         
     }
+    
     private void ExitHandler()
     {
         
