@@ -47,7 +47,9 @@ namespace FTP_Server.File_System
 
         public bool CanBeModifiedByUser(User user)
         {
-            if (AccessType == AccessType.PublicBoth) return true;
+            if (user == null && AuthorizedUser != null) return false;
+            
+            if (AccessType == AccessType.PublicBoth || AuthorizedUser == null) return true;
 
             if (AccessType == AccessType.PrivateBoth && AuthorizedUser.Equals(user)) return true;
 
@@ -56,8 +58,13 @@ namespace FTP_Server.File_System
 
         public bool CanBeReadByUser(User user)
         {
-            if (AccessType == AccessType.PrivateBoth || AccessType == AccessType.PublicReadOnly) return true;
+            if (AccessType == AccessType.PrivateBoth ||
+                AccessType == AccessType.PublicReadOnly ||
+                AuthorizedUser == null)
+                return true;
 
+            if (user == null && AuthorizedUser != null) return false;
+            
             if (AuthorizedUser.Equals(user)) return true;
 
             return false;

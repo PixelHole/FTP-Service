@@ -13,6 +13,8 @@ public class MainWindowControl
     
     public string CurrentDirectoryPath { get; private set; }
     public FileItem[] CurrentDirectoryContent { get; private set; }
+
+    public string AccountUsername { get; private set; } = string.Empty;
     
     
     public MainWindowControl(MainWindow view)
@@ -27,7 +29,7 @@ public class MainWindowControl
         ConnectEvents();
         ConnectToControlServer();
         GetCurrentDirectory();
-        GetCurrentDirectoryContentAndUpdate();
+        GetCurrentDirContentAndUpdateList();
         LocalRepositoryManager.IndexLocalRepo();
         UpdateLocalFilesList();
     }
@@ -94,10 +96,49 @@ public class MainWindowControl
         
         if (result == NetworkFlags.FileOperationSuccessFlag) OnServerDirectoryChange();
     }
-    public void GetCurrentDirectoryContentAndUpdate()
+    public void GetCurrentDirContentAndUpdateList()
     {
-        GetListOfCurrentDirectory();
-        UpdateServerFilesList();
+        Thread updateThread = new Thread(() =>
+        {
+            GetListOfCurrentDirectory();
+            UpdateServerFilesList();
+        });
+        updateThread.Start();
+    }
+    
+    //      Account
+    public void Logout()
+    {
+        string cmd = "LOGO";
+
+        string result = SendCommandToServerAndGetResult(cmd);
+        
+        if (result == NetworkFlags.ExecutionSuccessFlag) View.SetAccountStatus(false);
+
+        AccountUsername = string.Empty;
+
+        GetCurrentDirContentAndUpdateList();
+    }
+    public bool Login(string username, string password)
+    {
+        string cmd = GenerateCommand("USER", username);
+
+        string result = SendCommandToServerAndGetResult(cmd);
+        
+        if (result != NetworkFlags.UsernameAcceptedFlag) return false;
+
+        cmd = GenerateCommand("PASS", password);
+
+        result = SendCommandToServerAndGetResult(cmd);
+        
+        if (result != NetworkFlags.LoginSuccessFlag) return false;
+        
+        AccountUsername = username;
+        View.SetAccountStatus(true);
+
+        GetCurrentDirContentAndUpdateList();
+        
+        return true;
     }
     
     private string SendCommandToServerAndGetResult(string cmd)
@@ -106,8 +147,8 @@ public class MainWindowControl
 
         return ServerConnection.ReceiveFromServer();
     }
-    
-    
+
+
     // utility
     private void ConnectEvents()
     {
@@ -136,7 +177,7 @@ public class MainWindowControl
     private void OnServerDirectoryChange()
     {
         GetCurrentDirectory();
-        GetCurrentDirectoryContentAndUpdate();
+        GetCurrentDirContentAndUpdateList();
     }
 
 

@@ -25,6 +25,8 @@ namespace FTP_Server.Server.Client_Session
             {
                 case "user" :
                     return UsernameCommand(split);
+                case "logo":
+                    return LogoutCommand(split);
                 case "pass" :
                     return PasswordCommand(split);
                 case "list" :
@@ -62,6 +64,10 @@ namespace FTP_Server.Server.Client_Session
         private string PasswordCommand(string[] cmd)
         {
             return !CheckArgumentCount(cmd, 2) ? NetworkFlags.InvalidCommandFlag : Client.Login(cmd[1], false);
+        }
+        private string LogoutCommand(string[] cmd)
+        {
+            return !CheckArgumentCount(cmd, 1) ? NetworkFlags.InvalidCommandFlag : Client.Logout();
         }
         private string ListCommand(string[] cmd)
         {

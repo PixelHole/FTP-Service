@@ -155,12 +155,16 @@ namespace FTP_Server.File_System
 
             foreach (var subfolder in folder.Subfolders)
             {
+                if (!subfolder.CanBeReadByUser(auth)) continue;
+                
                 string rrPath = SystemToRootRelativePath(subfolder.Path);
                 filesList.Add(new FileItem(subfolder.Name, "Folder", true, rrPath));
             }
 
             foreach (var file in folder.Files)
             {
+                if (!file.CanBeReadByUser(auth)) continue;
+                
                 string rrPath = SystemToRootRelativePath(file.Path);
                 filesList.Add(new FileItem(file.Name, file.Extension, false, rrPath));
             }

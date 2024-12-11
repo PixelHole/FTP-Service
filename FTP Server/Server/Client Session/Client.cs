@@ -148,9 +148,11 @@ namespace FTP_Server.Server.Client_Session
 
                     UserInfo = TempUser;
 
+                    Print($"user logged in as {TempUsernameStorage}");
+                    
                     TempUser = null;
                     TempUsernameStorage = string.Empty;
-                    
+
                     return NetworkFlags.LoginSuccessFlag;
                 }
                 
@@ -175,6 +177,9 @@ namespace FTP_Server.Server.Client_Session
             TempUser = null;
             TempUsernameStorage = string.Empty;
             // just in case ↑
+            
+            Print("User logged out");
+            
             return NetworkFlags.ExecutionSuccessFlag;
         }
         public string CloseControlSocket()
@@ -187,24 +192,40 @@ namespace FTP_Server.Server.Client_Session
         //      File Manipulation
         public string DeleteDirectory(string path)
         {
-            return !FileManager.DeleteFolder(path, UserInfo)
-                ? NetworkFlags.FileOperationFailureFlag
-                : NetworkFlags.FileOperationSuccessFlag;
+            var result = FileManager.DeleteFolder(path, UserInfo);
+
+            if (!result)
+            {
+                Print($"Tried to delete folder but failed\n\tpath : {path}");
+                return NetworkFlags.FileOperationFailureFlag;
+            }
+            
+            Print($"Deleted folder at path : {path}");
+            return NetworkFlags.FileOperationSuccessFlag;
         }
         public string CreateDirectory(string path)
         {
-            return FileManager.CreateFolder(path, UserInfo, AccessType.PrivateBoth) == null
-                ? NetworkFlags.FileOperationFailureFlag
-                : NetworkFlags.FileOperationSuccessFlag;
+            var folder = FileManager.CreateFolder(path, UserInfo, AccessType.PrivateBoth);
+
+            if (folder == null)
+            {
+                Print($"wanted to create a directory but failed\n\tpath : {path}");
+                return NetworkFlags.FileOperationFailureFlag;
+            }
+
+            Print($"Created folder at : {folder.Path}");
+            return NetworkFlags.FileOperationSuccessFlag;
         }
         
         //      Directory Manipulation
         public string ListDirectory(string path)
         {
+            Print($"Requested list of files at {path}");
             return FileManager.GetListOfFiles(path, UserInfo);
         }
         public string GetCurrentDirectoryPath()
         {
+            Print("Fetched current directory");
             return FileManager.SystemToRootRelativePath(CurrentDirectory.Path);
         }
         public string ChangeDirectory(string path)
@@ -215,6 +236,8 @@ namespace FTP_Server.Server.Client_Session
 
             if (newDir == null) return NetworkFlags.FileOperationFailureFlag;
 
+            Print($"Changed directory\n\tfrom : {CurrentDirectory.Path}\n\tto : {newDir.Path}");
+            
             CurrentDirectory = newDir;
 
             return NetworkFlags.FileOperationSuccessFlag;
@@ -223,7 +246,15 @@ namespace FTP_Server.Server.Client_Session
         {
             var parent = CurrentDirectory.Parent;
 
-            if (parent != null) CurrentDirectory = parent;;
+            if (parent != null)
+            {
+                Print($"Went to parent directory\n\tPath : {parent?.Path}");
+                CurrentDirectory = parent;
+            }
+            else
+            {
+                Print("Tried to go to parent directory but it was inaccessible");
+            }
 
             return NetworkFlags.FileOperationSuccessFlag;
         }
