@@ -201,7 +201,7 @@ namespace FTP_Server.Server.Client_Session
         //      Directory Manipulation
         public string ListDirectory(string path)
         {
-            return FileManager.GetListOfFolder(path, UserInfo);
+            return FileManager.GetListOfFiles(path, UserInfo);
         }
         public string GetCurrentDirectoryPath()
         {

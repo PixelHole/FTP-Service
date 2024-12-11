@@ -15,7 +15,7 @@ namespace FTP_Server.Server.Client_Session
 
         public string GetCommandResult(string cmd)
         {
-            string[] split = cmd.Split(NetworkFlags.SeparatorFlag.ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            string[] split = cmd.Split(new string[] {NetworkFlags.SeparatorFlag}, StringSplitOptions.RemoveEmptyEntries);
 
             if (split.Length == 0) return NetworkFlags.InvalidCommandFlag;
 

@@ -8,7 +8,7 @@ class Program
 {
     public static void Main(string[] args)
     {
-        Application.Run<MainWindowControl>();
+        Application.Run<MainWindow>();
         Application.Shutdown();
     }
 }

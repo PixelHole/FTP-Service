@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using FileInformation;
 using FTP_Server.Database.DataTypes;
 using FTP_Server.File_System.Access_Management;
 using Message_Board.Network;
@@ -142,19 +143,31 @@ namespace FTP_Server.File_System
 
 
         // folder listing
-        public static string GetListOfFolder(string path, User auth)
+        public static string GetListOfFiles(string path, User auth)
         {
             if (IsSystemPath(path)) path = SystemToRootRelativePath(path);
             
             var folder = GetFolderByPath(path);
 
             if (folder == null) return string.Empty;
-            
-            var files = folder.GetAllSubFiles(auth);
 
-            string list = FolderListToString(files);
+            List<FileItem> filesList = new List<FileItem>();
 
-            return list;
+            foreach (var subfolder in folder.Subfolders)
+            {
+                string rrPath = SystemToRootRelativePath(subfolder.Path);
+                filesList.Add(new FileItem(subfolder.Name, "Folder", true, rrPath));
+            }
+
+            foreach (var file in folder.Files)
+            {
+                string rrPath = SystemToRootRelativePath(file.Path);
+                filesList.Add(new FileItem(file.Name, file.Extension, false, rrPath));
+            }
+
+            string json = JsonConvert.SerializeObject(filesList);
+
+            return json;
         }
         
         
@@ -220,21 +233,7 @@ namespace FTP_Server.File_System
 
         
         // utility functions
-        private static string FolderListToString(List<SystemFile> files)
-        {
-            StringBuilder result = new StringBuilder();
-
-            foreach (var file in files)
-            {
-                result.Append($"{file.Name}");
-
-                if (file is File dataFile) result.Append($"\t{dataFile.Extension}\t{dataFile.Size}");
-
-                result.Append('\n');
-            }
-
-            return result.ToString();
-        }
+        
         
         public static string RootRelativeToSystemPath(string rrPath)
         {

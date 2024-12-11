@@ -12,6 +12,7 @@
         <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
         <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+        <LangVersion>latest</LangVersion>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <PlatformTarget>AnyCPU</PlatformTarget>
@@ -42,6 +43,12 @@
         <Reference Include="System.Xml" />
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="..\FTP Client\Transfer\FileItem.cs">
+          <Link>Server\Transfer\FileItem.cs</Link>
+        </Compile>
+        <Compile Include="..\FTP Client\Transfer\ListOfFiles.cs">
+          <Link>Server\Transfer\ListOfFiles.cs</Link>
+        </Compile>
         <Compile Include="Database\DataTypes\User.cs" />
         <Compile Include="Database\UserDatabase.cs" />
         <Compile Include="File System\Access Management\AccessType.cs" />

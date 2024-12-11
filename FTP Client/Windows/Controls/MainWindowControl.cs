@@ -1,15 +1,31 @@
-﻿using FTP_Client.Connection;
+﻿using FileInformation;
+using FTP_Client.Connection;
 using Message_Board.Network;
+using Newtonsoft.Json;
 using Terminal.Gui;
 
 namespace FTP_Client.Windows.Controls;
 
-public class MainWindowControl : MainWindow
+public class MainWindowControl
 {
-    public MainWindowControl()
+    private MainWindow View { get; set; }
+    
+    public string CurrentDirectoryPath { get; private set; }
+    public ListOfFiles CurrentDirectoryContent { get; private set; }
+    
+    
+    public MainWindowControl(MainWindow view)
     {
-        ConnectEvents();
-        ConnectToControlServer();
+        View = view;
+
+        Thread setupThread = new Thread(() =>
+        {
+            ConnectEvents();
+            ConnectToControlServer();
+            GetCurrentDirectory();
+            GetCurrentDirectoryContentAndUpdate();
+        });
+        setupThread.Start();
     }
 
     private void Test()
@@ -33,27 +49,74 @@ public class MainWindowControl : MainWindow
     }
     
     
+    // Commands
+    public void GetListOfCurrentDirectory()
+    {
+        string cmd = $"LIST{NetworkFlags.SeparatorFlag}{CurrentDirectoryPath}";
+
+        string json = SendCommandToServerAndGetResult(cmd);
+
+        var filesList = JsonConvert.DeserializeObject<FileItem[]>(json);
+
+        CurrentDirectoryContent = new ListOfFiles(filesList);
+    }
+    public void GetCurrentDirectory()
+    {
+        string cmd = "PWD";
+
+        string newDirectory = SendCommandToServerAndGetResult(cmd);
+
+        CurrentDirectoryPath = newDirectory;
+    }
+    public void GetCurrentDirectoryContentAndUpdate()
+    {
+        GetListOfCurrentDirectory();
+        UpdateServerFilesList();
+    }
+    private string SendCommandToServerAndGetResult(string cmd)
+    {
+        ServerConnection.SendToServer(cmd);
+
+        return ServerConnection.ReceiveFromServer();
+    }
+    
+    
+    // utility
     private void ConnectEvents()
     {
         ServerConnection.OnControlConnected += OnControlConnected;
         ServerConnection.OnControlDisconnected += OnControlDisconnected;
     }
+    
+    
+    // Internal
     private void ConnectToControlServer()
     {
-        Thread connectionThread = new Thread(() =>
-        {
-            ServerConnection.InitiateConnection();
-            // Test();
-        });
-        connectionThread.Start();
+        ServerConnection.InitiateConnection();
     }
-    
+
+
+    // View control
+    //      Connection Status Label
     private void OnControlConnected()
     {
-        SetConnectionStatus(true);
+        View.SetConnectionStatus(true);
     }
     private void OnControlDisconnected()
     {
-        SetConnectionStatus(false);
+        View.SetConnectionStatus(false);
+    }
+    
+    //      Update Server files list
+    private void UpdateServerFilesList()
+    {
+        List<string[]> content = new List<string[]>();
+
+        foreach (var file in CurrentDirectoryContent.FilesList)
+        {
+            content.Add(new []{file.Name, file.Extension, file.ServerPath});
+        }
+        
+        View.SetServerFilesListContent(content);
     }
 }

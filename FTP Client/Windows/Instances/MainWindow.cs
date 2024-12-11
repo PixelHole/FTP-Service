@@ -1,18 +1,24 @@
-﻿using FTP_Client.Windows.Controls;
+﻿using System.Collections.ObjectModel;
+using System.Data;
+using FTP_Client.Windows.Controls;
 using Terminal.Gui;
 
 namespace FTP_Client.Windows;
 
 public class MainWindow : Window
 {
+    private MainWindowControl Control;
+    
     private Label AccountStatus { get; set; }
     private Label ConnectionStatus { get; set; }
-    private ListView LocalFilesList { get; set; }
-    private ListView ServerFilesList { get; set; }
+    private TableView LocalFilesList { get; set; }
+    private TableView ServerFilesList { get; set; }
 
     public MainWindow()
     {
         SetupElements();
+        
+        Control = new MainWindowControl(this);
     }
 
     private void SetupElements()
@@ -26,14 +32,14 @@ public class MainWindow : Window
             }),
             new MenuBarItem("Account", new []
             {
-                new MenuItem("Login", "", ExitHandler),
-                new MenuItem("Logout", "", ExitHandler)
+                new MenuItem("Login", "", LoginHandler),
+                new MenuItem("Logout", "", LogoutHandler)
             }),
             new MenuBarItem("Server", new []
             {
-                new MenuItem("Reconnect", "", ExitHandler),
-                new MenuItem("Refresh", "", ExitHandler),
-                new MenuItem("Disconnect", "", ExitHandler),
+                new MenuItem("Reconnect", "", ReconnectHandler),
+                new MenuItem("Refresh", "", RefreshHandler),
+                new MenuItem("Disconnect", "", DisconnectHandler),
             })
         };
         
@@ -56,39 +62,84 @@ public class MainWindow : Window
             Y = Pos.Y(ConnectionStatus)
         };
 
-        ServerFilesList = new ListView()
+        ServerFilesList = new TableView()
         {
             X = 0,
             Y = Pos.Bottom(ConnectionStatus),
             Width = Dim.Percent(60),
             Height = Dim.Percent(80),
             Title = "Server Files",
-            BorderStyle = LineStyle.Rounded
+            BorderStyle = LineStyle.Rounded,
+            Style = new TableStyle()
+            {
+                ShowHorizontalBottomline = true
+            }
         };
-        LocalFilesList = new ListView()
+
+        LocalFilesList = new TableView()
         {
             X = Pos.Right(ServerFilesList),
             Y = Pos.Y(ServerFilesList),
             Width = Dim.Fill(),
             Height = Dim.Height(ServerFilesList),
             Title = "Local Files",
-            BorderStyle = LineStyle.Rounded
+            BorderStyle = LineStyle.Rounded,
+            Style = new TableStyle()
+            {
+                ShowHorizontalBottomline = true
+            }
         };
 
         Add(menu, ConnectionStatus, separator, AccountStatus, ServerFilesList, LocalFilesList);
     }
+    
 
+    // UI updates
+    
+    //      File Lists
+    public void SetServerFilesListContent(List<string[]> content)
+    {
+        DataTable serverDt = new DataTable();
+        serverDt.Columns.Add("Name");
+        serverDt.Columns.Add("Extension");
+        serverDt.Columns.Add("Path");
+
+        foreach (var row in content)
+        {
+            serverDt.Rows.Add(row[0], row[1], row[2]);
+        }
+        
+        ServerFilesList.Table = new DataTableSource(serverDt);
+    }
+    public void SetLocalFilesListContent(List<string[]> content)
+    {
+        DataTable localDt = new DataTable();
+        localDt.Columns.Add("Name");
+        localDt.Columns.Add("Extension");
+        localDt.Columns.Add("Path");
+
+        foreach (var row in content)
+        {
+            localDt.Rows.Add(row[0], row[1], row[2]);
+        }
+        
+        LocalFilesList.Table = new DataTableSource(localDt);
+    }
+    
+    //      Status Labels
     public void SetConnectionStatus(bool connection)
     {
         string connectionText = connection ? "✓" : "X";
         ConnectionStatus.Text = $"Connection Status : {connectionText}";
     }
-    
-    private void ExitHandler()
+    public void SetAccountStatus(bool logged)
     {
-        
+        string accountText = logged ? "Logged in" : "Not Logged in";
+        AccountStatus.Text = $"Account Status : {accountText}";
     }
     
+
+    // input response
     private void LoginHandler()
     {
         
@@ -97,7 +148,6 @@ public class MainWindow : Window
     {
         
     }
-    
     private void ReconnectHandler()
     {
         
@@ -107,6 +157,10 @@ public class MainWindow : Window
         
     }
     private void DisconnectHandler()
+    {
+        
+    }
+    private void ExitHandler()
     {
         
     }

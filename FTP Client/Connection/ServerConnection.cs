@@ -51,7 +51,7 @@ public class ServerConnection
         OnControlDisconnected += () => IsControlConnected = false;
 
         OnDataConnected += () => IsDataConnected = true;
-        OnDataDisconnected += () => IsDataConnected = false;   
+        OnDataDisconnected += () => IsDataConnected = false;
     }
 
     // command handling
@@ -81,7 +81,9 @@ public class ServerConnection
     }
     private static void ConnectToControlServer()
     {
-        if (ConnectSocketToEndPoint(ControlSocket, ControlEndPoint)) OnControlConnected();
+        if (!ConnectSocketToEndPoint(ControlSocket, ControlEndPoint));
+        string ready = NetworkCommunication.ReceiveFromSocket(ControlSocket);
+        if (ready == NetworkFlags.ReadyFlag) OnControlConnected();
     }
     private static void ConnectToDataServer()
     {
