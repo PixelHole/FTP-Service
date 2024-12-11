@@ -18,6 +18,8 @@ public class ServerConnection
     public delegate void DataDisconnectedFromServerAction();
     public static event DataDisconnectedFromServerAction OnDataDisconnected;
 
+
+
     public static Socket ControlSocket { get; set; }
     public static Socket DataSocket { get; set; }
 
@@ -44,7 +46,6 @@ public class ServerConnection
             ConnectToControlServer();
         }
     }
-
     private static void ConnectInternalEventActions()
     {
         OnControlConnected += () => IsControlConnected = true;
@@ -53,6 +54,26 @@ public class ServerConnection
         OnDataConnected += () => IsDataConnected = true;
         OnDataDisconnected += () => IsDataConnected = false;
     }
+    
+    //  Socket handling
+    private static void CreateSockets()
+    {
+        ControlSocket = new Socket(ServerInformation.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        DataSocket = new Socket(ServerInformation.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+    }
+    private static void CloseControlConnection()
+    {
+        if (!ControlSocket.Connected) return;
+        ControlSocket.Shutdown(SocketShutdown.Both);
+        ControlSocket.Close();
+    }
+    private static void CloseDataConnection()
+    {
+        if (!DataSocket.Connected) return;
+        DataSocket.Shutdown(SocketShutdown.Both);
+        DataSocket.Close();
+    }
+
 
     // command handling
     public static string SendToServer(string cmd)
@@ -64,21 +85,40 @@ public class ServerConnection
         return NetworkCommunication.ReceiveFromSocket(ControlSocket);
     }
 
+    //  File handling
     public static bool ReceiveFileFromServer(string savePath)
     {
         ConnectToDataServer();
 
         string result = NetworkCommunication.ReceiveFileFromNetwork(DataSocket, savePath);
 
-        return result == NetworkFlags.TransferSuccessFlag;
+        TerminateDataConnection();
+            
+        if (result == NetworkFlags.TransferSuccessFlag)
+        {
+            return true;
+        }
+
+        return false;
     }
-    
-    
-    private static void CreateSockets()
+    public static bool SendFileToServer(string filePath)
     {
-        ControlSocket = new Socket(ServerInformation.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-        DataSocket = new Socket(ServerInformation.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        ConnectToDataServer();
+
+        string result = NetworkCommunication.SendFileOverNetwork(DataSocket, filePath);
+
+        TerminateDataConnection();
+
+        if (result == NetworkFlags.TransferSuccessFlag)
+        {
+            return true; 
+        }
+
+        return false;
     }
+
+
+    //  Connection
     private static void ConnectToControlServer()
     {
         if (!ConnectSocketToEndPoint(ControlSocket, ControlEndPoint)) return;
@@ -90,6 +130,39 @@ public class ServerConnection
         if (ConnectSocketToEndPoint(DataSocket, DataEndPoint)) OnDataConnected();
     }
 
+    private static void TerminateControlConnection()
+    {
+        try
+        {
+            if (ControlSocket.Connected) ControlSocket.Disconnect(true);
+        }
+        catch (Exception)
+        {
+            ControlSocket = new Socket(ServerInformation.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        }
+    }
+    private static void TerminateDataConnection()
+    {
+        try
+        {
+            if (DataSocket.Connected) DataSocket.Disconnect(true);
+        }
+        catch (Exception)
+        {
+            DataSocket = new Socket(ServerInformation.IpAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        }
+    }
+
+
+    public static void TerminateSession()
+    {
+        TerminateControlConnection();
+        TerminateDataConnection();
+        
+        CloseControlConnection();
+        CloseDataConnection();
+    }
+    
     private static bool ConnectSocketToEndPoint(Socket socket, IPEndPoint endPoint)
     {
         int errorCount = 0;

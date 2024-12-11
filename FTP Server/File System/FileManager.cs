@@ -36,14 +36,14 @@ namespace FTP_Server.File_System
 
             string folderPath = path.Substring(0, path.Length - $"\\{splitPath[splitPath.Length - 1]}".Length);
 
-            folderPath = SystemToRootRelativePath(folderPath);
-
             Folder parent = createFolders ? CreateFolder(folderPath, auth, accessType) : GetFolderByPath(folderPath);
 
             if (parent == null || !parent.CanBeModifiedByUser(auth)) return null;
 
-            System.IO.File.Create(path);
+            if (IsPathRootRelative(path)) path = RootRelativeToSystemPath(path);
             
+            // System.IO.File.Create(path);
+
             File file = new File(path, accessType, auth);
 
             parent.AddFile(file);
@@ -151,14 +151,14 @@ namespace FTP_Server.File_System
 
             if (folder == null) return string.Empty;
 
-            List<FileItem> filesList = new List<FileItem>();
+            List<FileData> filesList = new List<FileData>();
 
             foreach (var subfolder in folder.Subfolders)
             {
                 if (!subfolder.CanBeReadByUser(auth)) continue;
                 
                 string rrPath = SystemToRootRelativePath(subfolder.Path);
-                filesList.Add(new FileItem(subfolder.Name, "Folder", true, rrPath));
+                filesList.Add(new FileData(subfolder.Name, "Folder", true, rrPath));
             }
 
             foreach (var file in folder.Files)
@@ -166,7 +166,7 @@ namespace FTP_Server.File_System
                 if (!file.CanBeReadByUser(auth)) continue;
                 
                 string rrPath = SystemToRootRelativePath(file.Path);
-                filesList.Add(new FileItem(file.Name, file.Extension, false, rrPath));
+                filesList.Add(new FileData(file.Name, file.Extension, false, rrPath));
             }
 
             string json = JsonConvert.SerializeObject(filesList);

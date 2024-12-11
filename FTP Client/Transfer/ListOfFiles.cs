@@ -4,11 +4,11 @@ namespace FileInformation;
 
 public class ListOfFiles
 {
-    [JsonProperty] public FileItem[] FilesList { get; private set; }
+    [JsonProperty] public FileData[] FilesList { get; private set; }
 
 
     [JsonConstructor]
-    public ListOfFiles(FileItem[] filesList)
+    public ListOfFiles(FileData[] filesList)
     {
         FilesList = filesList;
     }

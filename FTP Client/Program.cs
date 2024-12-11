@@ -8,7 +8,18 @@ class Program
 {
     public static void Main(string[] args)
     {
-        Application.Run<MainWindow>();
+        SessionData.Main = Thread.CurrentThread;
+
+        Application.Init();
+        
+        while (SessionData.RestartRequested)
+        {
+            SessionData.RestartRequested = false;
+            
+            SessionData.MainInstance = new MainWindow();
+            Application.Run(SessionData.MainInstance);
+        }
+
         Application.Shutdown();
     }
 }

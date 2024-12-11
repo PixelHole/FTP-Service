@@ -26,5 +26,7 @@
         public static string FileTransferFlag { get; } = "<150>";
         
         public static string TransferSuccessFlag { get; } = "<226>";
+
+        public static string FailedHandshakeFlag { get; } = "<FH>";
     }
 }

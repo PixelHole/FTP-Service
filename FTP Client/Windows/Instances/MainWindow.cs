@@ -16,20 +16,8 @@ public class MainWindow : Window
     private Button AccOkBtn { get; set; }
     private Button AccCancelBtn { get; set; }
     
-    
+
     private Window FileTransferDialog { get; set; }
-
-    private int _transferProgress = 0;
-    public int TransferProgress
-    {
-        get => _transferProgress;
-        set
-        {
-            _transferProgress = value;
-            UpdateTransferProgress();
-        }
-    }
-
     private ProgressBar TransferProgressBar { get; set; }
 
     private Label AccountStatus { get; set; }
@@ -136,6 +124,7 @@ public class MainWindow : Window
             Title = "Account Login",
             BorderStyle = LineStyle.Rounded,
             ShadowStyle = ShadowStyle.Transparent,
+            Visible = false
         };
 
         Label usernameLabel = new Label()
@@ -183,7 +172,7 @@ public class MainWindow : Window
 
         AccountLoginDialog.Add(usernameLabel, UsernameField, passwordLabel, PasswordField, AccCancelBtn, AccOkBtn);
         
-        // Add(AccountLoginDialog);
+        Add(AccountLoginDialog);
     }
     private void SetupFileTransferDialog()
     {
@@ -195,6 +184,7 @@ public class MainWindow : Window
             Height = 6,
             BorderStyle = LineStyle.Rounded,
             ShadowStyle = ShadowStyle.Transparent,
+            Visible = false
         };
 
         TransferProgressBar = new ProgressBar()
@@ -211,14 +201,15 @@ public class MainWindow : Window
 
         FileTransferDialog.Add(TransferProgressBar);
 
-        // Add(FileTransferDialog);
+        Add(FileTransferDialog);
     }
     private void ConnectEvents()
     {
         ServerFilesList.CellActivated += ServerCellActionHandler;
         LocalFilesList.CellActivated += LocalCellActionHandler;
+        
+        Closing += OnClosing;
     }
-    
 
 
     // UI updates
@@ -247,8 +238,6 @@ public class MainWindow : Window
         localDt.Columns.Add("Extension");
         localDt.Columns.Add("Path");
 
-        localDt.Rows.Add("...", "", "");
-        
         foreach (var row in content)
         {
             localDt.Rows.Add(row[0], row[1], row[2]);
@@ -283,44 +272,41 @@ public class MainWindow : Window
         
         Remove(AccountLoginDialog);
     }
-    public void OpenTransferDialog()
+    public void OpenTransferDialog(string title)
     {
         FileTransferDialog.X = Pos.Align(Alignment.Center);
         FileTransferDialog.Y = Pos.Align(Alignment.Center);
-        Add(FileTransferDialog);
+
+        FileTransferDialog.Title = title;
+
+        FileTransferDialog.Visible = true;
     }
     public void CloseTransferDialog()
     {
         TransferProgressBar.Fraction = 0;
-        
-        Remove(FileTransferDialog);
+
+        FileTransferDialog.Visible = false;
     }
     private void OpenLogoutDialog()
     {
-        int choice = MessageBox.Query("Are you sure?", "Are you sure you would like to log out?", "Yes", "No");
+        int choice = ShowConfirmationDialog("Log out", "Are you sure?");
         
         if (choice == 0) LogoutHandler();
     }
-    
-    //      Dialog content set
-    private void UpdateTransferProgress()
-    {
-        Thread updateThread = new Thread(() =>
-        {
-            TransferProgressBar.Fraction = TransferProgress / 100f;
-        });
-        updateThread.Start();
-    }
-    
-    
+
+
     // input response
     private void ServerCellActionHandler(object? sender, CellActivatedEventArgs e)
     {
-        Control.OnServerFileSelected(e.Row);
+        int choice = ShowConfirmationDialog("Download", "Download this file from the server?");
+        
+        if (choice == 0) Control.OnServerFileSelected(e.Row);
     }
     private void LocalCellActionHandler(object? sender, CellActivatedEventArgs e)
     {
+        int choice = ShowConfirmationDialog("Upload", "upload this file to the server?");
         
+        if (choice == 0) Control.OnLocalFileSelected(e.Row);
     }
 
     private void LoginHandler()
@@ -357,7 +343,7 @@ public class MainWindow : Window
     }
     private void RefreshHandler()
     {
-        
+        Control.GetCurrentDirContentAndUpdateList();
     }
     private void DisconnectHandler()
     {
@@ -366,16 +352,29 @@ public class MainWindow : Window
     
     private void ExitHandler()
     {
+        int choice = ShowConfirmationDialog("Exit", "Are you sure?");
         
+        if (choice == 0) Control.TerminateApplication();
     }
     private void RestartHandler()
     {
-        
+        Control.RestartApplication();
     }
     
     //  Error box
-    private void ShowErrorMessage(string title, string msg)
+    public void ShowErrorMessage(string title, string msg)
     {
         MessageBox.Query(title, msg, "Ok");
+    }
+    public int ShowConfirmationDialog(string title, string msg)
+    {
+        return MessageBox.Query(title, msg, "Yes", "No");
+    }
+    
+    
+    //  Internal event
+    private void OnClosing(object? sender, ToplevelClosingEventArgs e)
+    { 
+        if (!SessionData.RestartRequested) ExitHandler();
     }
 }

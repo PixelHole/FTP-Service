@@ -15,6 +15,7 @@ namespace Message_Board.Network
         public static int PacketErrorTolerance { get; private set; } = 100;
         public static int PacketErrorTimeout { get; private set; } = 500; // milliseconds 
 
+        
 
         /// <summary>
         /// Encodes and sends a string over the network.
@@ -81,10 +82,22 @@ namespace Message_Board.Network
         {
             NetworkPacket[] packets = SerializeFileIntoPackets(path);
 
+            SendOverNetwork(handler, NetworkFlags.ReadyFlag);
+
+            string handshake = ReceiveFromSocket(handler);
+
+            if (handshake != NetworkFlags.ReadyFlag) return NetworkFlags.FailedHandshakeFlag;
+
             return SendPacketsOverNetwork(handler, packets);
         }
         public static string ReceiveFileFromNetwork(Socket handler, string path)
         {
+            string ready = ReceiveFromSocket(handler);
+
+            if (ready != NetworkFlags.ReadyFlag) return NetworkFlags.FailedHandshakeFlag;
+            
+            SendOverNetwork(handler, NetworkFlags.ReadyFlag);
+            
             string result = ReceivePacketsFromNetwork(handler, out NetworkPacket[] packets);
 
             DeserializePacketsIntoFile(packets, path);
@@ -217,7 +230,7 @@ namespace Message_Board.Network
             packets = new NetworkPacket[initial.Max];
 
             packets[0] = initial;
-            
+
             for (int i = 1; i < packets.Length; i++)
             {
                 NetworkPacket packet = ReceivePacketFromNetwork(handler);

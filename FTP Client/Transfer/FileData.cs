@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace FileInformation;
 
-public class FileItem
+public class FileData
 {
     [JsonProperty] public string Name { get; private set; }
     [JsonProperty] public string Extension { get; private set; }
@@ -12,15 +12,16 @@ public class FileItem
 
 
     [JsonConstructor]
-    public FileItem(string name, string extension, bool isFolder, string path)
+    public FileData(string name, string extension, bool isFolder, string path)
     {
         Name = name;
         Extension = extension;
         IsFolder = isFolder;
         Path = path;
     }
-    public FileItem(string path, bool isFolder)
+    public FileData(string path, bool isFolder)
     {
+        Path = path;
         string[] splitPath = path.Split('\\');
         IsFolder = isFolder;
         Name = splitPath[splitPath.Length - 1];
@@ -41,7 +42,7 @@ public class FileItem
     }
     public override bool Equals(object? obj)
     {
-        if (obj is FileItem item)
+        if (obj is FileData item)
             return string.Equals(Name, item.Name)
                    && string.Equals(Extension, item.Extension)
                    && string.Equals(Path, item.Path)

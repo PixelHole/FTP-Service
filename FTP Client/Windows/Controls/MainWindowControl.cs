@@ -12,7 +12,7 @@ public class MainWindowControl
     private MainWindow View { get; set; }
     
     public string CurrentDirectoryPath { get; private set; }
-    public FileItem[] CurrentDirectoryContent { get; private set; }
+    public FileData[] CurrentDirectoryContent { get; private set; }
 
     public string AccountUsername { get; private set; } = string.Empty;
     
@@ -33,8 +33,8 @@ public class MainWindowControl
         LocalRepositoryManager.IndexLocalRepo();
         UpdateLocalFilesList();
     }
-    
-    
+
+
     // Commands
     
     //      File selection Interpreter 
@@ -43,30 +43,37 @@ public class MainWindowControl
         if (row == 0)
         {
             GoToParentDirectory();
+            OnServerDirectoryChange();
             return;
         }
         row--;
 
-        FileItem fileItem = CurrentDirectoryContent[row];
+        FileData fileData = CurrentDirectoryContent[row];
 
-        if (fileItem.IsFolder)
+        if (fileData.IsFolder)
         {
-            ChangeDirectory(fileItem.Path);
+            ChangeDirectory(fileData.Path);
             return;
         }
         
-        // receive file from server
+        FetchFileFromServer(fileData);
+    }
+    public void OnLocalFileSelected(int row)
+    {
+        FileData fileData = LocalRepositoryManager.LocalFiles[row];
+        
+        SendFileToServer(fileData);
     }
     
+    
     //      Directory related
-
     public void GetListOfCurrentDirectory()
     {
         string cmd = GenerateCommand("List", CurrentDirectoryPath);
 
         string json = SendCommandToServerAndGetResult(cmd);
 
-        var filesList = JsonConvert.DeserializeObject<FileItem[]>(json);
+        var filesList = JsonConvert.DeserializeObject<FileData[]>(json);
 
         if (filesList == null) return;
         
@@ -85,8 +92,6 @@ public class MainWindowControl
         string cmd = "CDUP";
 
         SendCommandToServerAndGetResult(cmd);
-        
-        OnServerDirectoryChange();
     }
     public void ChangeDirectory(string path)
     {
@@ -105,6 +110,7 @@ public class MainWindowControl
         });
         updateThread.Start();
     }
+    
     
     //      Account
     public void Logout()
@@ -147,7 +153,61 @@ public class MainWindowControl
 
         return ServerConnection.ReceiveFromServer();
     }
+    
+    //      Session
+    public void TerminateApplication()
+    {
+        ServerConnection.TerminateSession();
+        Application.RequestStop(SessionData.MainInstance);
+    }
+    public void RestartApplication()
+    {
+        SessionData.RestartRequested = true;
+        Application.RequestStop(SessionData.MainInstance);
+    }
 
+    //      File
+    public void SendFileToServer(FileData fileData)
+    {
+        string cmd = GenerateCommand("STOR", GenerateFileServerPath(fileData.Name));
+
+        string res = SendCommandToServerAndGetResult(cmd);
+        
+        if (res != NetworkFlags.FileTransferFlag) return;
+        
+        View.OpenTransferDialog("Uploading...");
+
+        bool transferResult = ServerConnection.SendFileToServer(fileData.Path);
+        
+        if (transferResult) UploadSuccessHandler();
+        else UploadFailedHandler();
+        
+        View.CloseTransferDialog();
+    }
+    public void FetchFileFromServer(FileData fileData)
+    {
+        string cmd = GenerateCommand("RETR", fileData.Path);
+
+        string result = SendCommandToServerAndGetResult(cmd);
+
+        if (result != NetworkFlags.FileTransferFlag) return;
+        
+        View.OpenTransferDialog("Downloading...");
+
+        var transferResult = ServerConnection.ReceiveFileFromServer(GenerateFileSavePath(fileData.Name));
+
+        if (transferResult)
+        {
+            DownloadSuccessHandler(fileData.Path);
+        }
+        else
+        {
+            DownloadFailedHandler();
+        }
+
+        View.CloseTransferDialog();
+    }
+    
 
     // utility
     private void ConnectEvents()
@@ -155,7 +215,7 @@ public class MainWindowControl
         ServerConnection.OnControlConnected += OnControlConnected;
         ServerConnection.OnControlDisconnected += OnControlDisconnected;
     }
-    private List<string[]> listOfFilesToStringList(FileItem[] files)
+    private List<string[]> listOfFilesToStringList(FileData[] files)
     {
         List<string[]> content = new List<string[]>();
 
@@ -167,8 +227,10 @@ public class MainWindowControl
         return content;
     }
     private string GenerateCommand(string header, string body) => $"{header}{NetworkFlags.SeparatorFlag}{body}";
-    
-    
+    private string GenerateFileSavePath(string fileName) => LocalRepositoryManager.LocalRepositoryPath + "\\" + fileName;
+    private string GenerateFileServerPath(string fileName) => CurrentDirectoryPath + "\\" + fileName;
+
+
     // Internal
     private void ConnectToControlServer()
     {
@@ -177,6 +239,25 @@ public class MainWindowControl
     private void OnServerDirectoryChange()
     {
         GetCurrentDirectory();
+        GetCurrentDirContentAndUpdateList();
+    }
+    
+    private void DownloadFailedHandler()
+    {
+        View.ShowErrorMessage("Fail", "Failed to download file");
+    }
+    private void DownloadSuccessHandler(string path)
+    {
+        LocalRepositoryManager.IndexFileAt(path);
+        View.ShowErrorMessage("Success", "Successfully downloaded file");
+    }
+    private void UploadFailedHandler()
+    {
+        View.ShowErrorMessage("Fail", "Failed to upload file");
+    }
+    private void UploadSuccessHandler()
+    {
+        View.ShowErrorMessage("Success", "Successfully uploaded file");
         GetCurrentDirContentAndUpdateList();
     }
 

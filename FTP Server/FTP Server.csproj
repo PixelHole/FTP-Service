@@ -43,8 +43,8 @@
         <Reference Include="System.Xml" />
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="..\FTP Client\Transfer\FileItem.cs">
-          <Link>Server\Transfer\FileItem.cs</Link>
+        <Compile Include="..\FTP Client\Transfer\FileData.cs">
+          <Link>Server\Transfer\FileData.cs</Link>
         </Compile>
         <Compile Include="..\FTP Client\Transfer\ListOfFiles.cs">
           <Link>Server\Transfer\ListOfFiles.cs</Link>

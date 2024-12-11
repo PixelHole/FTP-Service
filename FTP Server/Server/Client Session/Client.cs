@@ -86,8 +86,10 @@ namespace FTP_Server.Server.Client_Session
                 Print("Sending file to client...");
                 
                 string result = NetworkCommunication.SendFileOverNetwork(DataSocket, file.Path);
-                NetworkCommunication.SendOverNetwork(ControlSocket, result);
                 
+                if (result == NetworkFlags.TransferSuccessFlag) Print("Upload success");
+                else Print("Upload failed");
+
                 DataSocket.Shutdown(SocketShutdown.Both);
                 DataSocket.Close();
 
@@ -116,15 +118,17 @@ namespace FTP_Server.Server.Client_Session
                     return;
                 }
                 
-                string result = NetworkCommunication.ReceiveFileFromNetwork(DataSocket, filePath);
+                Print("Receiving file from client");
+                
+                string result = NetworkCommunication.ReceiveFileFromNetwork(DataSocket, file.Path);
 
                 if (result != NetworkFlags.TransferSuccessFlag)
                 {
+                    Print("Download failed");
                     FileManager.DeleteFile(filePath, UserInfo);
-                }
-
-                NetworkCommunication.SendOverNetwork(ControlSocket, result);
+                }else Print("Download success");
                 
+
                 DataSocket.Shutdown(SocketShutdown.Both);
                 DataSocket.Close();
 
