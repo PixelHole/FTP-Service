@@ -27,11 +27,11 @@ public class MainWindowControl
     private void ApplicationSetup()
     {
         ConnectEvents();
+        LocalRepositoryManager.IndexLocalRepo();
+        UpdateLocalFilesList();
         ConnectToControlServer();
         GetCurrentDirectory();
         GetCurrentDirContentAndUpdateList();
-        LocalRepositoryManager.IndexLocalRepo();
-        UpdateLocalFilesList();
     }
 
 
@@ -282,7 +282,7 @@ public class MainWindowControl
         View.SetServerFilesListContent(content);
     }
     //      Update local files list
-    private void UpdateLocalFilesList()
+    public void UpdateLocalFilesList()
     {
         var content = listOfFilesToStringList(LocalRepositoryManager.LocalFiles.ToArray());
         

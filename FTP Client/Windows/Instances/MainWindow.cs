@@ -44,10 +44,14 @@ public class MainWindow : Window
         var menu = new MenuBar();
         menu.Menus = new[]
         {
-            new MenuBarItem("File", new []
+            new MenuBarItem("Application", new []
             {
                 new MenuItem("Restart", "", RestartHandler),
                 new MenuItem("Exit", "", ExitHandler),
+            }),
+            new MenuBarItem("File", new []
+            {
+                new MenuItem("Index local files", "", ReIndexHandler),
             }),
             new MenuBarItem("Account", new []
             {
@@ -86,7 +90,7 @@ public class MainWindow : Window
             X = 0,
             Y = Pos.Bottom(ConnectionStatus),
             Width = Dim.Percent(60),
-            Height = Dim.Percent(80),
+            Height = Dim.Fill(),
             Title = "Server Files",
             BorderStyle = LineStyle.Rounded,
             CellActivationKey = KeyCode.Enter,
@@ -101,7 +105,7 @@ public class MainWindow : Window
             X = Pos.Right(ServerFilesList),
             Y = Pos.Y(ServerFilesList),
             Width = Dim.Fill(),
-            Height = Dim.Height(ServerFilesList),
+            Height = Dim.Fill(),
             Title = "Local Files",
             BorderStyle = LineStyle.Rounded,
             CellActivationKey = KeyCode.Enter,
@@ -296,6 +300,11 @@ public class MainWindow : Window
 
 
     // input response
+    private void ReIndexHandler()
+    {
+        Control.UpdateLocalFilesList();
+    }
+    
     private void ServerCellActionHandler(object? sender, CellActivatedEventArgs e)
     {
         int choice = ShowConfirmationDialog("Download", "Download this file from the server?");
