@@ -10,7 +10,6 @@ public class MainWindow : Window
     private MainWindowControl Control { get; set; }
     
     private Window AccountLoginDialog { get; set; }
-    
     private TextField UsernameField { get; set; }
     private TextField PasswordField { get; set; }
     private Button AccOkBtn { get; set; }
@@ -19,6 +18,9 @@ public class MainWindow : Window
 
     private Window FileTransferDialog { get; set; }
     private ProgressBar TransferProgressBar { get; set; }
+    
+    private Dialog FolderNameDialog { get; set; }
+    private TextField FndNameField { get; set; }
 
     private Label AccountStatus { get; set; }
     private Label ConnectionStatus { get; set; }
@@ -38,6 +40,7 @@ public class MainWindow : Window
         SetupMainWindow();
         SetupAccountDialog();
         SetupFileTransferDialog();
+        SetupFolderNameDialog();
     }
     private void SetupMainWindow()
     {
@@ -90,7 +93,7 @@ public class MainWindow : Window
             X = 0,
             Y = Pos.Bottom(ConnectionStatus),
             Width = Dim.Percent(60),
-            Height = Dim.Fill(),
+            Height = Dim.Fill() - 3,
             Title = "Server Files",
             BorderStyle = LineStyle.Rounded,
             CellActivationKey = KeyCode.Enter,
@@ -105,7 +108,7 @@ public class MainWindow : Window
             X = Pos.Right(ServerFilesList),
             Y = Pos.Y(ServerFilesList),
             Width = Dim.Fill(),
-            Height = Dim.Fill(),
+            Height = Dim.Fill() - 3,
             Title = "Local Files",
             BorderStyle = LineStyle.Rounded,
             CellActivationKey = KeyCode.Enter,
@@ -114,8 +117,18 @@ public class MainWindow : Window
                 ShowHorizontalBottomline = true
             }
         };
+        
+        Button makeDirectoryBtn = new Button()
+        {
+            X = Pos.Align(Alignment.Start),
+            Y = Pos.Bottom(ServerFilesList),
+            Height = 3,
+            Text = "Create Directory",
+        };
 
-        Add(menu, ConnectionStatus, separator, AccountStatus, ServerFilesList, LocalFilesList);
+        makeDirectoryBtn.Accept += (sender, args) => OpenFolderNameDialog();
+
+        Add(menu, ConnectionStatus, separator, AccountStatus, ServerFilesList, LocalFilesList, makeDirectoryBtn);
     }
     private void SetupAccountDialog()
     {
@@ -128,7 +141,6 @@ public class MainWindow : Window
             Title = "Account Login",
             BorderStyle = LineStyle.Rounded,
             ShadowStyle = ShadowStyle.Transparent,
-            Visible = false
         };
 
         Label usernameLabel = new Label()
@@ -176,7 +188,7 @@ public class MainWindow : Window
 
         AccountLoginDialog.Add(usernameLabel, UsernameField, passwordLabel, PasswordField, AccCancelBtn, AccOkBtn);
         
-        Add(AccountLoginDialog);
+        //Add(AccountLoginDialog);
     }
     private void SetupFileTransferDialog()
     {
@@ -205,7 +217,50 @@ public class MainWindow : Window
 
         FileTransferDialog.Add(TransferProgressBar);
 
-        Add(FileTransferDialog);
+        // Add(FileTransferDialog);
+    }
+    private void SetupFolderNameDialog()
+    {
+        FolderNameDialog = new Dialog()
+        {
+            X = Pos.Align(Alignment.Center),
+            Y = Pos.Align(Alignment.Center),
+            Width = 40,
+            Height = 7,
+            Title = "Enter folder name"
+        };
+
+        FndNameField = new TextField()
+        {
+            X = Pos.Center(),
+            Y = 1,
+            Width = Dim.Fill() - 4,
+            Height = 1
+        };
+        
+        Button fndOkBtn = new Button()
+        {
+            X = Pos.Center() - 5,
+            Y = 3,
+            Height = 1,
+            Text = "Ok"
+        };
+
+        fndOkBtn.Accept += (sender, args) => CreateDirectoryHandler();
+        
+        Button fndCancelBtn = new Button()
+        {
+            X = Pos.Center() + 4,
+            Y = 3,
+            Height = 1,
+            Text = "Cancel"
+        };
+
+        fndCancelBtn.Accept += (sender, args) => CloseFolderNameDialog();
+        
+        FolderNameDialog.Add(FndNameField, fndOkBtn, fndCancelBtn);
+
+        // Add(folderNameDialog);
     }
     private void ConnectEvents()
     {
@@ -224,13 +279,13 @@ public class MainWindow : Window
         DataTable serverDt = new DataTable();
         serverDt.Columns.Add("Name");
         serverDt.Columns.Add("Extension");
-        serverDt.Columns.Add("Path");
+        serverDt.Columns.Add("Action");
 
         serverDt.Rows.Add("...", "", "");
         
         foreach (var row in content)
         {
-            serverDt.Rows.Add(row[0], row[1], row[2]);
+            serverDt.Rows.Add(row[0], row[1], "Delete");
         }
         
         ServerFilesList.Table = new DataTableSource(serverDt);
@@ -283,13 +338,13 @@ public class MainWindow : Window
 
         FileTransferDialog.Title = title;
 
-        FileTransferDialog.Visible = true;
+        Add(FileTransferDialog);
     }
     public void CloseTransferDialog()
     {
         TransferProgressBar.Fraction = 0;
 
-        FileTransferDialog.Visible = false;
+        Remove(FileTransferDialog);
     }
     private void OpenLogoutDialog()
     {
@@ -297,19 +352,51 @@ public class MainWindow : Window
         
         if (choice == 0) LogoutHandler();
     }
+    private void OpenFolderNameDialog()
+    {
+        FolderNameDialog.X = Pos.Center();
+        FolderNameDialog.Y = Pos.Center();
 
+        Add(FolderNameDialog);
+    }
+    private void CloseFolderNameDialog()
+    {
+        FndNameField.Text = "";
+
+        Remove(FolderNameDialog);
+    }
 
     // input response
     private void ReIndexHandler()
     {
         Control.UpdateLocalFilesList();
     }
-    
+    private void DeleteHandler(int row)
+    {
+        int choice = ShowConfirmationDialog("Delete", "Delete this file?");
+        
+        if (choice == 0) Control.OnServerDeleteAction(row);
+    }
+    private void CreateDirectoryHandler()
+    {
+        Control.CreateDirectory(FndNameField.Text);
+        
+        CloseFolderNameDialog();
+    }
+    private void DownloadHandler(int row)
+    {
+        Control.OnServerFileSelected(row);
+    }
+
     private void ServerCellActionHandler(object? sender, CellActivatedEventArgs e)
     {
-        int choice = ShowConfirmationDialog("Download", "Download this file from the server?");
+        if (e.Col == 2)
+        {
+            DeleteHandler(e.Row);
+            return;
+        }
         
-        if (choice == 0) Control.OnServerFileSelected(e.Row);
+        DownloadHandler(e.Row);
     }
     private void LocalCellActionHandler(object? sender, CellActivatedEventArgs e)
     {

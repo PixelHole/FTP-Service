@@ -9,18 +9,17 @@ namespace FTP_Server.File_System
 {
     public class Folder : SystemFile
     {
-        public List<Folder> Subfolders { get; private set; } = new List<Folder>();
-        public List<File> Files { get; private set; } = new List<File>();
+        [JsonProperty] public List<Folder> Subfolders { get; private set; } = new List<Folder>();
+        [JsonProperty] public List<File> Files { get; private set; } = new List<File>();
 
         
 
         [JsonConstructor]
-        public Folder(Folder[] folders, File[] files, string name, AccessType accessType, User authUser, string path) 
-            : base(name, path, accessType, authUser)
+        public Folder(Folder[] subFolders, File[] files, string name, string path, AccessType accessType, User authorizedUser) : base(name, path, accessType, authorizedUser)
         {
-            if (folders != null)
+            if (subFolders != null)
             {
-                foreach (var folder in folders)
+                foreach (var folder in subFolders)
                 {
                     AddSubfolder(folder);
                 }
@@ -38,7 +37,8 @@ namespace FTP_Server.File_System
             if (index) IndexThisFolder();
         }
         
-        
+
+
         public bool AddSubfolder(Folder folder)
         {
             if (Subfolders.Contains(folder)) return false;

@@ -96,6 +96,7 @@ namespace FTP_Server.Server.Client_Session
                 DataSocket = null;
             });
             sendThread.Start();
+            
             return NetworkFlags.FileTransferFlag;
         }
         public string ReceiveFileFromClientAsync(string filePath)
@@ -110,7 +111,9 @@ namespace FTP_Server.Server.Client_Session
                     return;
                 }
                 
-                File file = FileManager.CreateFile(filePath, false, UserInfo, AccessType.PrivateBoth);
+                AccessType access = UserInfo == null ? AccessType.PublicBoth : AccessType.PrivateBoth; 
+                
+                File file = FileManager.CreateFile(filePath, false, UserInfo, access);
 
                 if (file == null)
                 {
@@ -209,7 +212,9 @@ namespace FTP_Server.Server.Client_Session
         }
         public string CreateDirectory(string path)
         {
-            var folder = FileManager.CreateFolder(path, UserInfo, AccessType.PrivateBoth);
+            AccessType access = UserInfo == null ? AccessType.PublicBoth : AccessType.PrivateBoth; 
+            
+            var folder = FileManager.CreateFolder(path, UserInfo, access);
 
             if (folder == null)
             {
@@ -218,6 +223,20 @@ namespace FTP_Server.Server.Client_Session
             }
 
             Print($"Created folder at : {folder.Path}");
+            return NetworkFlags.FileOperationSuccessFlag;
+        }
+
+        public string DeleteFile(string path)
+        {
+            var result = FileManager.DeleteFile(path, UserInfo);
+            
+            if (!result)
+            {
+                Print($"Tried to delete file but failed\n\tpath : {path}");
+                return NetworkFlags.FileOperationFailureFlag;
+            }
+            
+            Print($"Deleted file at path : {path}");
             return NetworkFlags.FileOperationSuccessFlag;
         }
         

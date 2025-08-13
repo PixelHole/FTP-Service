@@ -55,8 +55,9 @@ public class MainWindowControl
             ChangeDirectory(fileData.Path);
             return;
         }
+        int choice = View.ShowConfirmationDialog("Download", "Download this file from the server?");
         
-        FetchFileFromServer(fileData);
+        if (choice == 0) FetchFileFromServer(fileData);
     }
     public void OnLocalFileSelected(int row)
     {
@@ -64,8 +65,23 @@ public class MainWindowControl
         
         SendFileToServer(fileData);
     }
-    
-    
+    public void OnServerDeleteAction(int row)
+    {
+        if (row == 0) return;
+
+        row--;
+        
+        FileData selected = CurrentDirectoryContent[row];
+
+        if (selected.IsFolder)
+        {
+            DeleteDirectory(selected.Path);
+            return;
+        }
+        
+        DeleteFile(selected.Path);
+    }
+
     //      Directory related
     public void GetListOfCurrentDirectory()
     {
@@ -110,11 +126,58 @@ public class MainWindowControl
         });
         updateThread.Start();
     }
+    public void DeleteDirectory(string path)
+    {
+        string cmd = GenerateCommand("RMD", path);
+
+        string result = SendCommandToServerAndGetResult(cmd);
+
+        if (result == NetworkFlags.FileOperationSuccessFlag)
+        {
+            GetCurrentDirContentAndUpdateList();
+            View.ShowErrorMessage("Success", "Directory deleted");
+            return;
+        }
+        
+        View.ShowErrorMessage("Failure", "Couldn't delete directory");
+    }
+    public void DeleteFile(string path)
+    {
+        string cmd = GenerateCommand("DELE", path);
+
+        string result = SendCommandToServerAndGetResult(cmd);
+
+        if (result == NetworkFlags.FileOperationSuccessFlag)
+        {
+            GetCurrentDirContentAndUpdateList();
+            View.ShowErrorMessage("Success", "File deleted");
+            return;
+        }
+        
+        View.ShowErrorMessage("Failure", "Couldn't delete file");
+    }
+    public void CreateDirectory(string name)
+    {
+        string cmd = GenerateCommand("MKD", GenerateFileServerPath(name));
+        
+        string result = SendCommandToServerAndGetResult(cmd);
+
+        if (result == NetworkFlags.FileOperationSuccessFlag)
+        {
+            GetCurrentDirContentAndUpdateList();
+            View.ShowErrorMessage("Success", "Folder created");
+            return;
+        }
+        
+        View.ShowErrorMessage("Failure", "Couldn't create folder");
+    }
     
     
     //      Account
     public void Logout()
     {
+        if (string.IsNullOrEmpty(AccountUsername)) return;
+        
         string cmd = "LOGO";
 
         string result = SendCommandToServerAndGetResult(cmd);

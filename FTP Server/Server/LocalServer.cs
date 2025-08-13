@@ -43,7 +43,6 @@ namespace FTP_Server.Server
         private static void ListenForConnections()
         {
             ControlListener.Listen(100);
-            DataListener.Listen(100);
 
             while (true)
             {

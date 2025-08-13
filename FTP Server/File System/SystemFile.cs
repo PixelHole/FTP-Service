@@ -8,11 +8,11 @@ namespace FTP_Server.File_System
 {
     public abstract class SystemFile
     {
-        public string Name { get; protected set; }
-        public string Path { get; protected set; }
-        public AccessType AccessType { get; private set; }
-        public User AuthorizedUser { get; private set; }
-        public Folder Parent { get; protected set; }
+        [JsonProperty] public string Name { get; protected set; }
+        [JsonProperty] public string Path { get; protected set; }
+        [JsonProperty] public AccessType AccessType { get; private set; }
+        [JsonProperty] public User AuthorizedUser { get; private set; }
+        [JsonIgnore] public Folder Parent { get; protected set; }
 
 
         protected SystemFile(string name, string path) : this(name, path, AccessType.PublicBoth, null)
@@ -20,6 +20,7 @@ namespace FTP_Server.File_System
             Name = name;
             Path = path;
         }
+        [JsonConstructor]
         protected SystemFile(string name, string path, AccessType accessType, User authorizedUser)
         {
             Name = name;
@@ -47,18 +48,18 @@ namespace FTP_Server.File_System
 
         public bool CanBeModifiedByUser(User user)
         {
-            if (user == null && AuthorizedUser != null) return false;
+            if (AccessType is AccessType.PrivateReadOnly or AccessType.PublicReadOnly) return false;
             
             if (AccessType == AccessType.PublicBoth || AuthorizedUser == null) return true;
 
-            if (AccessType == AccessType.PrivateBoth && AuthorizedUser.Equals(user)) return true;
+            if (user != null && AuthorizedUser.Equals(user)) return true;
 
             return false;
         }
 
         public bool CanBeReadByUser(User user)
         {
-            if (AccessType == AccessType.PrivateBoth ||
+            if (AccessType == AccessType.PublicBoth ||
                 AccessType == AccessType.PublicReadOnly ||
                 AuthorizedUser == null)
                 return true;

@@ -20,40 +20,24 @@ namespace FTP_Server.Server.Client_Session
             if (split.Length == 0) return NetworkFlags.InvalidCommandFlag;
 
             string header = split[0].ToLower();
-            
-            switch (header)
+
+            return header switch
             {
-                case "user" :
-                    return UsernameCommand(split);
-                case "logo":
-                    return LogoutCommand(split);
-                case "pass" :
-                    return PasswordCommand(split);
-                case "list" :
-                    return ListCommand(split);
-                case "retr" :
-                    return RetrieveFileCommand(split);
-                case "stor" :
-                    return StoreFileCommand(split);
-                case "dele" :
-                    return DeleteFileCommand(split);
-                case "mkd" :
-                    return MakeDirectoryCommand(split);
-                case "rmd" :
-                    return RemoveDirectoryCommand(split);
-                case "pwd" :
-                    return CurrentDirectoryPathCommand(split);
-                case "cwd" :
-                    return ChangeDirectoryCommand(split);
-                case "cdup" :
-                    return GoToParentDirectoryCommand(split);
-                case "quit" :
-                    return QuitCommand(split);
-
-
-                default:
-                    return NetworkFlags.InvalidCommandFlag;
-            }
+                "user" => UsernameCommand(split),
+                "logo" => LogoutCommand(split),
+                "pass" => PasswordCommand(split),
+                "list" => ListCommand(split),
+                "retr" => RetrieveFileCommand(split),
+                "stor" => StoreFileCommand(split),
+                "dele" => DeleteFileCommand(split),
+                "mkd" => MakeDirectoryCommand(split),
+                "rmd" => RemoveDirectoryCommand(split),
+                "pwd" => CurrentDirectoryPathCommand(split),
+                "cwd" => ChangeDirectoryCommand(split),
+                "cdup" => GoToParentDirectoryCommand(split),
+                "quit" => QuitCommand(split),
+                _ => NetworkFlags.InvalidCommandFlag
+            };
         }
         
 
@@ -83,7 +67,7 @@ namespace FTP_Server.Server.Client_Session
         }
         private string DeleteFileCommand(string[] cmd)
         {
-            return !CheckArgumentCount(cmd, 2) ? NetworkFlags.InvalidCommandFlag : Client.DeleteDirectory(cmd[1]);
+            return !CheckArgumentCount(cmd, 2) ? NetworkFlags.InvalidCommandFlag : Client.DeleteFile(cmd[1]);
         }
         private string RemoveDirectoryCommand(string[] cmd)
         {

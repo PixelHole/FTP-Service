@@ -13,7 +13,7 @@ namespace Message_Board.Network
         public static int PacketLength { get; private set; } = 1024;
         public static int ActualPacketLength { get; private set; } = 1024;
         public static int PacketErrorTolerance { get; private set; } = 100;
-        public static int PacketErrorTimeout { get; private set; } = 500; // milliseconds 
+        public static int PacketErrorTimeout { get; private set; } = 500; // milliseconds
 
         
 

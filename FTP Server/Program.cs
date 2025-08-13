@@ -11,6 +11,7 @@ namespace FTP_Server
         {
             FileManager.StartService();
             LocalServer.StartService();
+            FileManager.SaveIndexToFile();
         }
     }
 }

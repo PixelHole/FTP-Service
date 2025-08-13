@@ -131,11 +131,14 @@ namespace FTP_Server.File_System
         }
         private static void DeleteAllFilesAndFoldersInFolder(Folder folder, User auth)
         {
-            foreach (var file in folder.Files)
+            var files = folder.Files.ToArray();
+            foreach (var file in files)
             {
                 DeleteFile(file, auth);
             }
-            foreach (var subfolder in folder.Subfolders)
+
+            var subfolders = folder.Subfolders;
+            foreach (var subfolder in subfolders)
             {
                 DeleteFolder(subfolder, auth);
             }
@@ -218,8 +221,12 @@ namespace FTP_Server.File_System
         public static void SaveIndexToFile()
         {
             StreamWriter writer = new StreamWriter(SaveFileName);
+
+            writer.Flush();
             
+            string json = JsonConvert.SerializeObject(RootDirectory, Formatting.Indented);
             
+            writer.Write(json);
             
             writer.Dispose();
             writer.Close();
@@ -227,8 +234,10 @@ namespace FTP_Server.File_System
         public static void LoadIndexFromFile()
         {
             StreamReader reader = new StreamReader(SaveFileName);
-            
-            
+
+            string json = reader.ReadToEnd();
+
+            RootDirectory = JsonConvert.DeserializeObject<Folder>(json);
             
             reader.Dispose();
             reader.Close();
